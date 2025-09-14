@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20250910-01
+      author: marwa
+      runInTransaction: false
+      preConditions:
+        - dbms:
+            type: mysql
+      changes:
+        - sql:
+            splitStatements: false
+            stripComments: true
+            sql: |
+              CREATE DATABASE IF NOT EXISTS `notification_service`
