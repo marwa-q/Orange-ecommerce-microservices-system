@@ -29,10 +29,10 @@ public class WelcomeEmailService {
      * - Subject is set here (can be localized later)
      * - This method is synchronous; we can make it async later with @Async or by sending to a message bus
      */
-    public void sendWelcomeEmail(String toEmail, String fullName, String verificationLink) {
+    public void sendWelcomeEmail(String toEmail, String fullName, String otp) {
         Map<String, Object> model = Map.of(
                 "fullName", fullName != null ? fullName : "",
-                "verificationLink", verificationLink != null ? verificationLink : "#"
+                "otp", otp != null ? otp : "#"
         );
 
         String html = renderer.render("welcome", model);
@@ -40,7 +40,7 @@ public class WelcomeEmailService {
 
         try {
             emailSender.sendHtml(toEmail, subject, html);
-            log.info("Welcome email sent to {}", toEmail);
+            log.info("Welcome email sent to {}", toEmail + otp);
         } catch (Exception ex) {
             // handle failures according to your policy later (retry, dead-letter, audit DB)
             log.error("Failed to send welcome email to {}: {}", toEmail, ex.getMessage(), ex);

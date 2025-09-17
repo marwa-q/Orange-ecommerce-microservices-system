@@ -25,13 +25,9 @@
 
         <p>Thanks for registering! Please verify your email address to activate your account.</p>
 
-        <p style="text-align:center;">
-            <a th:href="${verificationLink}" class="btn">Verify Email</a>
+        <p style="text-align:center; font-size: 32;">
+            <b th:text="${otp}"></b>
         </p>
-
-        <p class="muted">If the button does not work, paste this link into your browser:</p>
-        <p class="muted" th:text="${verificationLink}">https://...</p>
-
         <hr/>
         <p class="muted">If you didn't register, you can safely ignore this message.</p>
     </div>

@@ -10,5 +10,5 @@ import java.io.Serializable;
 public class UserRegisteredEvent implements Serializable {
     private String email;
     private String firstName;
-
+    private String otp;
 }

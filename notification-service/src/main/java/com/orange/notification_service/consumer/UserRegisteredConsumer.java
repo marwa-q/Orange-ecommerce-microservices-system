@@ -20,6 +20,6 @@ public class UserRegisteredConsumer {
         System.out.println("Received UserRegisteredEvent for email: " + event.getEmail());
 
         // Send welcome message
-        emailService.sendWelcomeEmail(event.getEmail(), event.getFirstName(), "google.com");
+        emailService.sendWelcomeEmail(event.getEmail(), event.getFirstName(), event.getOtp());
     }
 }
