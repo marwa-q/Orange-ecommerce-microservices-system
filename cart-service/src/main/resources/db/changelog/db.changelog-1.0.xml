@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+
+    <!-- Cart Table -->
+    <changeSet id="1" author="marwa">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="carts"/>
+            </not>
+        </preConditions>
+        <createTable tableName="carts">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="uuid" type="UUID">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="user_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(20)" defaultValue="ACTIVE">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_amount" type="DECIMAL(10,2)" defaultValue="0.00">
+                <constraints nullable="true"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expired_at" type="TIMESTAMP">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+        <addCheckConstraint tableName="carts" constraintName="chk_cart_status" 
+                           checkCondition="status IN ('ACTIVE', 'CHECKED_OUT', 'EXPIRED')"/>
+    </changeSet>
+
+    <!-- CartItem Table -->
+    <changeSet id="2" author="marwa">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="cart_items"/>
+            </not>
+        </preConditions>
+        <createTable tableName="cart_items">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="uuid" type="UUID">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="cart_id" type="BIGINT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="product_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="quantity" type="INT" defaultValue="1">
+                <constraints nullable="false"/>
+            </column>
+            <column name="price" type="DECIMAL(10,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="subtotal" type="DECIMAL(10,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="cart_items" baseColumnNames="cart_id"
+                                constraintName="fk_cart_items_cart_id"
+                                referencedTableName="carts" referencedColumnNames="id"
+                                onDelete="CASCADE"/>
+        <addCheckConstraint tableName="cart_items" constraintName="chk_cart_items_quantity" 
+                           checkCondition="quantity > 0"/>
+        <addCheckConstraint tableName="cart_items" constraintName="chk_cart_items_price" 
+                           checkCondition="price >= 0"/>
+        <addCheckConstraint tableName="cart_items" constraintName="chk_cart_items_subtotal" 
+                           checkCondition="subtotal >= 0"/>
+    </changeSet>
+
+    <!-- Indexes for Cart Table -->
+    <changeSet id="3" author="marwa">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_carts_user_id"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="carts" indexName="idx_carts_user_id">
+            <column name="user_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="4" author="marwa">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_carts_status"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="carts" indexName="idx_carts_status">
+            <column name="status"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="5" author="marwa">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_carts_expired_at"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="carts" indexName="idx_carts_expired_at">
+            <column name="expired_at"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Indexes for CartItem Table -->
+    <changeSet id="6" author="marwa">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_cart_items_cart_id"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="cart_items" indexName="idx_cart_items_cart_id">
+            <column name="cart_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="7" author="marwa">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_cart_items_product_id"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="cart_items" indexName="idx_cart_items_product_id">
+            <column name="product_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

@@ -20,6 +20,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception ex, Locale locale) {
         String msg = messageService.getMessage("error.generic", locale);
-        return ResponseEntity.badRequest().body(ApiResponse.failure(msg));
+        return ResponseEntity.badRequest().body(ApiResponse.failure(msg + " : " + ex.getMessage()));
     }
 }

@@ -3,7 +3,6 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
-
     <!-- Category Table -->
     <changeSet id="1" author="marwa">
         <preConditions onFail="MARK_RAN">
@@ -109,7 +108,7 @@
             <column name="updated_at" type="TIMESTAMP"/>
         </createTable>
         <addForeignKeyConstraint baseTableName="reviews" baseColumnNames="product_id"
-                                 referencedTableName="products" referencedColumnNames="id"/>
+                                 referencedTableName="products" referencedColumnNames="uuid"/>
     </changeSet>
 
 </databaseChangeLog>

@@ -8,10 +8,16 @@ databaseChangeLog:
             columns:
               - column:
                   name: id
-                  type: char(36)
+                  type: bigint
                   constraints:
                     primaryKey: true
                     nullable: false
+              - column:
+                  name: uuid
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    unique: true
               - column:
                   name: name
                   type: varchar(255)
@@ -37,10 +43,16 @@ databaseChangeLog:
             columns:
               - column:
                   name: id
-                  type: char(36)
+                  type: bigint
                   constraints:
                     primaryKey: true
                     nullable: false
+              - column:
+                  name: uuid
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    unique: true
               - column:
                   name: name
                   type: varchar(255)
@@ -66,10 +78,16 @@ databaseChangeLog:
             columns:
               - column:
                   name: id
-                  type: char(36)
+                  type: bigint
                   constraints:
                     primaryKey: true
                     nullable: false
+              - column:
+                  name: uuid
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    unique: true
               - column:
                   name: name
                   type: varchar(255)
@@ -101,7 +119,7 @@ databaseChangeLog:
                   defaultValue: 0.00
               - column:
                   name: category_id
-                  type: char(36)
+                  type: bigint
                   constraints:
                     nullable: false
               - column:
@@ -130,18 +148,24 @@ databaseChangeLog:
             columns:
               - column:
                   name: id
-                  type: char(36)
+                  type: bigint
                   constraints:
                     primaryKey: true
                     nullable: false
               - column:
+                  name: uuid
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
                   name: product_id
-                  type: char(36)
+                  type: bigint
                   constraints:
                     nullable: false
               - column:
                   name: tag_id
-                  type: char(36)
+                  type: bigint
                   constraints:
                     nullable: false
               - column:
@@ -169,18 +193,24 @@ databaseChangeLog:
             columns:
               - column:
                   name: id
-                  type: char(36)
+                  type: bigint
                   constraints:
                     primaryKey: true
                     nullable: false
               - column:
+                  name: uuid
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
                   name: user_id
-                  type: char(36)
+                  type: uuid
                   constraints:
                     nullable: false
               - column:
                   name: product_id
-                  type: char(36)
+                  type: bigint
                   constraints:
                     nullable: false
               - column:
@@ -204,3 +234,18 @@ databaseChangeLog:
                 referencedColumnNames: id
                 columnNames: product_id
                 constraintName: fk_review_product
+
+  - changeSet:
+      id: 6
+      author: marwa
+      changes:
+        - addColumn:
+            tableName: products
+            columns:
+              - column:
+                  name: variants
+                  type: json
+                  constraints:
+                    nullable: true
+                  remarks: "JSON field storing product variants (color, size, etc.)"
+

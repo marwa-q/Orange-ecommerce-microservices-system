@@ -1,0 +1,68 @@
+error.generic=حدث خطأ ما
+
+# رسائل إدارة المنتجات
+product.created.success=تم إنشاء المنتج بنجاح
+product.created.failure=فشل في إنشاء المنتج
+
+product.updated.success=تم تحديث المنتج بنجاح
+product.updated.failure=فشل في تحديث المنتج
+
+product.deleted.success=تم حذف المنتج بنجاح
+product.deleted.failure=فشل في حذف المنتج
+
+product.activated.success=تم اعادة تفعيل المنتج بنجاح 
+product.activated.failure=قشل في اععادة تفعيل المنتج 
+
+# قائمة المنتجات
+product.list.success=تم جلب قائمة المنتجات بنجاح
+product.list.failure=فشل في جلب قائمة المنتجات
+
+# تفاصيل المنتج
+product.details.success=تم جلب تفاصيل المنتج بنجاح
+product.details.failure=فشل في جلب تفاصيل المنتج
+
+# صور المنتج
+product.image.upload.success=تم رفع صورة المنتج بنجاح
+product.image.upload.failure=فشل في رفع صورة المنتج
+
+# مخزون المنتج
+product.stock.success=تم تحديث المخزون بنجاح
+product.stock.failure=فشل في تحديث المخزون
+
+# حدث المخزون المنخفض
+product.lowstock.success=تم نشر حدث المخزون المنخفض بنجاح
+product.lowstock.failure=فشل في نشر حدث المخزون المنخفض
+
+# عدد المشاهدات
+product.viewcount.success=تم تحديث عدد مشاهدات المنتج بنجاح
+product.viewcount.failure=فشل في تحديث عدد مشاهدات المنتج
+
+# الوسوم
+product.tag.success=تم تحديث وسوم المنتج بنجاح
+product.tag.failure=فشل في تحديث وسوم المنتج
+
+# التدقيق
+product.audit.success=تم تسجيل عملية التدقيق بنجاح
+product.audit.failure=فشل في تسجيل عملية التدقيق
+
+# إدارة التصنيفات
+category.created.success=تم إنشاء التصنيف بنجاح
+category.created.failure=فشل في إنشاء التصنيف
+
+category.updated.success=تم تحديث التصنيف بنجاح
+category.updated.failure=فشل في تحديث التصنيف
+
+category.deleted.success=تم حذف التصنيف بنجاح
+category.deleted.failure=فشل في حذف التصنيف
+
+# المتغيرات
+product.variant.success=تم تحديث متغيرات المنتج بنجاح
+product.variant.failure=فشل في تحديث متغيرات المنتج
+
+# استيراد المنتجات
+product.import.success=تم استيراد المنتجات بنجاح
+product.import.failure=فشل في استيراد المنتجات
+
+# التقييمات
+product.review.success=تم جلب التقييمات بنجاح
+product.review.failure=فشل في جلب التقييمات
