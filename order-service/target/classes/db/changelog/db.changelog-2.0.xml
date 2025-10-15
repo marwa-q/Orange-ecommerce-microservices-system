@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Add payment method and address fields to orders table -->
+    <changeSet id="1" author="marwa">
+        <preConditions onFail="MARK_RAN">
+            <tableExists tableName="orders"/>
+            <not>
+                <columnExists tableName="orders" columnName="payment_method"/>
+            </not>
+        </preConditions>
+        <comment>Add payment method and address fields to orders table</comment>
+        
+        <!-- Add payment method column -->
+        <addColumn tableName="orders">
+            <column name="payment_method" type="VARCHAR(50)">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+        
+        <!-- Add shipping address column -->
+        <addColumn tableName="orders">
+            <column name="shipping_address" type="TEXT">
+                <constraints nullable="true"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <!-- Add indexes for new fields -->
+    <changeSet id="2" author="marwa">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="orders" columnName="payment_method"/>
+            <not>
+                <indexExists indexName="idx_orders_payment_method"/>
+            </not>
+        </preConditions>
+        <comment>Add indexes for payment method and address fields</comment>
+        
+        <!-- Index for payment method -->
+        <createIndex tableName="orders" indexName="idx_orders_payment_method">
+            <column name="payment_method"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

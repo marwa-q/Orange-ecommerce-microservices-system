@@ -20,8 +20,6 @@ public class ApiResponse<T> {
     }
     
     public static <T> ApiResponse<T> success(String message, T data) {
-
-        RequestUtils.getHeaderValue("Accept-language", "en")
         return new ApiResponse<T>(true, message, data);
     }
 

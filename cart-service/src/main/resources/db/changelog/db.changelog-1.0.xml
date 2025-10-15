@@ -3,7 +3,7 @@
         xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
-        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd">
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
     <!-- Cart Table -->
     <changeSet id="1" author="marwa">
@@ -38,8 +38,7 @@
                 <constraints nullable="true"/>
             </column>
         </createTable>
-        <addCheckConstraint tableName="carts" constraintName="chk_cart_status" 
-                           checkCondition="status IN ('ACTIVE', 'CHECKED_OUT', 'EXPIRED')"/>
+        <sql>ALTER TABLE carts ADD CONSTRAINT chk_cart_status CHECK (status IN ('ACTIVE','CHECKED_OUT','EXPIRED'))</sql>
     </changeSet>
 
     <!-- CartItem Table -->
@@ -82,12 +81,9 @@
                                 constraintName="fk_cart_items_cart_id"
                                 referencedTableName="carts" referencedColumnNames="id"
                                 onDelete="CASCADE"/>
-        <addCheckConstraint tableName="cart_items" constraintName="chk_cart_items_quantity" 
-                           checkCondition="quantity > 0"/>
-        <addCheckConstraint tableName="cart_items" constraintName="chk_cart_items_price" 
-                           checkCondition="price >= 0"/>
-        <addCheckConstraint tableName="cart_items" constraintName="chk_cart_items_subtotal" 
-                           checkCondition="subtotal >= 0"/>
+        <sql>ALTER TABLE cart_items ADD CONSTRAINT chk_cart_items_quantity CHECK (quantity > 0)</sql>
+        <sql>ALTER TABLE cart_items ADD CONSTRAINT chk_cart_items_price CHECK (price >= 0)</sql>
+        <sql>ALTER TABLE cart_items ADD CONSTRAINT chk_cart_items_subtotal CHECK (subtotal >= 0)</sql>
     </changeSet>
 
     <!-- Indexes for Cart Table -->

@@ -45,7 +45,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             
             List<SimpleGrantedAuthority> authorities = new ArrayList<>();
             if (role != null && !role.trim().isEmpty()) {
-                // Remove ROLE_ prefix if present, Spring Security will add it
                 String roleName = role.startsWith("ROLE_") ? role : "ROLE_" + role;
                 authorities.add(new SimpleGrantedAuthority(roleName));
             }

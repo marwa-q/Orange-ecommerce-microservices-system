@@ -29,7 +29,7 @@ public class CartItem extends BaseEntity {
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
 
-    @Column(name = "price", nullable = false, precision = 10, scale = 2)
+    @Column(name = "price", nullable = false, precision = 10, scale = 3)
     private BigDecimal price;
 
     @Column(name = "subtotal", nullable = false, precision = 10, scale = 2)

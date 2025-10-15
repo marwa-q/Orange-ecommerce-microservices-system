@@ -36,9 +36,9 @@ public class SecurityConfig {
                                 "/api/health/**",
                                 "/api/test/**",
                                 "/api/auth-test/**",
-                                "/actuator/**",
-                                "/api/cart/**"
+                                "/actuator/**"
                         ).permitAll()
+                        .requestMatchers("/api/cart/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

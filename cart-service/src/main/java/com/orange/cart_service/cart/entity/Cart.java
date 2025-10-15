@@ -39,6 +39,22 @@ public class Cart extends BaseEntity {
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private List<CartItem> cartItems = new ArrayList<>();
 
+    public void setCartItems(List<CartItem> cartItems) {
+        this.cartItems = cartItems;
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        super.onCreate();
+        this.expiredAt = LocalDateTime.now().plusHours(24);
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        super.onUpdate();
+        this.expiredAt = LocalDateTime.now().plusHours(24);
+    }
+
     // Helper methods
     public void addCartItem(CartItem cartItem) {
         if (cartItems == null) {
@@ -65,6 +81,10 @@ public class Cart extends BaseEntity {
                     .map(CartItem::getSubtotal)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
         }
+    }
+
+    public boolean isEmpty() {
+        return cartItems.isEmpty();
     }
 
     public boolean isExpired() {

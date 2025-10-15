@@ -1,4 +1,4 @@
-package com.orange.cart_service.cart.repo;
+package com.orange.cart_service.cartItem.repo;
 
 import com.orange.cart_service.cartItem.entity.CartItem;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,10 +17,10 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
 
     List<CartItem> findByCartId(Long cartId);
 
-    Optional<CartItem> findByCartIdAndProductId(Long cartId, UUID productId);
+    Optional<CartItem> findByCartUuidAndProductId(UUID cartId, UUID productId);
 
     @Query("SELECT ci FROM CartItem ci WHERE ci.cart.id = :cartId AND ci.productId = :productId")
-    Optional<CartItem> findByCartIdAndProductIdQuery(@Param("cartId") Long cartId, @Param("productId") UUID productId);
+    Optional<CartItem> findByCartIdAndProductIdQuery(@Param("cartId") UUID cartId, @Param("productId") UUID productId);
 
     @Query("SELECT ci FROM CartItem ci WHERE ci.cart.uuid = :cartUuid")
     List<CartItem> findByCartUuid(@Param("cartUuid") UUID cartUuid);

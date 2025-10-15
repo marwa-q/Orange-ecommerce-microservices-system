@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Order Table -->
+    <changeSet id="1" author="marwa">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="orders"/>
+            </not>
+        </preConditions>
+        <createTable tableName="orders">
+            <column name="id" type="BIGINT" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="uuid" type="UUID">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="order_number" type="VARCHAR(50)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="user_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cart_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="VARCHAR(20)" defaultValue="PENDING">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_amount" type="DECIMAL(10,3)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMP" defaultValueComputed="CURRENT_TIMESTAMP">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <sql>ALTER TABLE orders ADD CONSTRAINT chk_order_status CHECK (status IN ('PENDING','CONFIRMED','UNDER_REVIEW','SHIPPED','DELIVERED','CANCELLED'))</sql>
+        <sql>ALTER TABLE orders ADD CONSTRAINT chk_order_total_amount CHECK (total_amount >= 0)</sql>
+    </changeSet>
+
+    <!-- Indexes for Order Table -->
+    <changeSet id="2" author="marwa">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_orders_user_id"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="orders" indexName="idx_orders_user_id">
+            <column name="user_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="3" author="marwa">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_orders_cart_id"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="orders" indexName="idx_orders_cart_id">
+            <column name="cart_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="4" author="marwa">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_orders_status"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="orders" indexName="idx_orders_status">
+            <column name="status"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="5" author="marwa">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists indexName="idx_orders_order_number"/>
+            </not>
+        </preConditions>
+        <createIndex tableName="orders" indexName="idx_orders_order_number">
+            <column name="order_number"/>
+        </createIndex>
+    </changeSet>
+
+    <!-- Update user_id and cart_id columns to CHAR(36) type -->
+    <changeSet id="7" author="marwa">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="orders" columnName="user_id"/>
+            <columnExists tableName="orders" columnName="cart_id"/>
+            <sqlCheck expectedResult="BIGINT">
+                SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_NAME = 'orders' AND COLUMN_NAME = 'user_id'
+            </sqlCheck>
+        </preConditions>
+        <comment>Update user_id and cart_id columns from BIGINT to CHAR(36) for UUID storage</comment>
+        
+        <!-- Drop existing indexes first -->
+        <dropIndex tableName="orders" indexName="idx_orders_user_id"/>
+        <dropIndex tableName="orders" indexName="idx_orders_cart_id"/>
+        
+        <!-- Alter columns to CHAR(36) type (MySQL UUID storage) -->
+        <sql>ALTER TABLE orders MODIFY COLUMN user_id CHAR(36)</sql>
+        <sql>ALTER TABLE orders MODIFY COLUMN cart_id CHAR(36)</sql>
+        
+        <!-- Recreate indexes -->
+        <createIndex tableName="orders" indexName="idx_orders_user_id">
+            <column name="user_id"/>
+        </createIndex>
+        <createIndex tableName="orders" indexName="idx_orders_cart_id">
+            <column name="cart_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>
