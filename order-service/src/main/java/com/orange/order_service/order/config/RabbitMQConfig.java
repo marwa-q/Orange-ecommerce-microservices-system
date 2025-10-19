@@ -16,12 +16,15 @@ public class RabbitMQConfig {
 
     // Queue names
     public static final String CART_CHECKOUT_QUEUE = "cart.checkout.queue";
+    public static final String ORDER_PLACED_QUEUE = "order.placed.queue";
     
     // Exchange names
     public static final String CART_EXCHANGE = "cart.checkout.exchange";
+    public static final String ORDER_EXCHANGE = "order.exchange";
     
     // Routing keys
     public static final String CART_CHECKOUT_ROUTING_KEY = "cart.checkout";
+    public static final String ORDER_PLACED_ROUTING_KEY = "order.placed";
 
     @Bean
     public MessageConverter messageConverter() {
@@ -66,5 +69,30 @@ public class RabbitMQConfig {
                 .bind(cartCheckoutQueue())
                 .to(cartExchange())
                 .with(CART_CHECKOUT_ROUTING_KEY);
+    }
+
+    // Order Exchange
+    @Bean
+    public DirectExchange orderExchange() {
+        log.info("Creating DirectExchange: {}", ORDER_EXCHANGE);
+        return new DirectExchange(ORDER_EXCHANGE);
+    }
+
+    // Order Placed Queue
+    @Bean
+    public Queue orderPlacedQueue() {
+        log.info("Creating Queue: {}", ORDER_PLACED_QUEUE);
+        return QueueBuilder.durable(ORDER_PLACED_QUEUE).build();
+    }
+
+    // Binding for order placed
+    @Bean
+    public Binding orderPlacedBinding() {
+        log.info("Creating Binding: Queue={} -> Exchange={} with RoutingKey={}", 
+                ORDER_PLACED_QUEUE, ORDER_EXCHANGE, ORDER_PLACED_ROUTING_KEY);
+        return BindingBuilder
+                .bind(orderPlacedQueue())
+                .to(orderExchange())
+                .with(ORDER_PLACED_ROUTING_KEY);
     }
 }

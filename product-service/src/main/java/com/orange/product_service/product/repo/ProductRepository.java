@@ -22,13 +22,15 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     Optional<Product> findByUuid(UUID uuid);
 
+    @Query("SELECT p.name FROM Product p WHERE p.uuid = :id")
+    Optional<String> findNameByUuid(@Param("id") UUID uuid);
+
     @Modifying
     @Transactional
     @Query("UPDATE Product p SET p.viewCount = COALESCE(p.viewCount, 0) + 1 WHERE p.uuid = :uuid")
     void incrementViewCount(@Param("uuid") UUID uuid);
 
-    List<Product> findByUuidIn(List<UUID> uuids);
-    
+
     @Query("SELECT p FROM Product p WHERE p.isDeleted = false")
     Page<Product> findActiveProducts(Pageable pageable);
 

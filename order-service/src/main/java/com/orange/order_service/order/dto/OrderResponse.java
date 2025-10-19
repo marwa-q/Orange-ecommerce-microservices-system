@@ -16,7 +16,6 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OrderResponse {
-    private Long id;
     private UUID uuid;
     private String orderNumber;
     private UUID userId;

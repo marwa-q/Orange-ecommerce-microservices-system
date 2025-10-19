@@ -27,17 +27,17 @@ public class OrderAdminController {
         this.orderAdminService = orderAdminService;
     }
 
-    @GetMapping("/confirmed")
+    @GetMapping("/submitted")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Get Confirmed Orders", description = "Get paginated confirmed orders with items (ADMIN only)")
-    public ResponseEntity<ApiResponse<PaginatedOrderResponse>> getConfirmedOrders(
+    @Operation(summary = "Get Submitted Orders", description = "Get paginated submitted orders with items (ADMIN only)")
+    public ResponseEntity<ApiResponse<PaginatedOrderResponse>> getSubmittedOrders(
             HttpServletRequest request,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         try {
-            log.info("Received get confirmed orders request by admin (page: {}, size: {})", page, size);
+            log.info("Received get submitted orders request by admin (page: {}, size: {})", page, size);
 
-            ApiResponse<PaginatedOrderResponse> response = orderAdminService.getConfirmedOrders(request, page, size);
+            ApiResponse<PaginatedOrderResponse> response = orderAdminService.getSubmittedOrders(request, page, size);
 
             if (response.isSuccess()) {
                 return ResponseEntity.ok(response);
@@ -45,9 +45,9 @@ public class OrderAdminController {
                 return ResponseEntity.badRequest().body(response);
             }
         } catch (Exception e) {
-            log.error("Error fetching confirmed orders: {}", e.getMessage());
+            log.error("Error fetching submitted orders: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.failure("order.fetch_confirmed_error"));
+                    .body(ApiResponse.failure("order.fetch_submitted_error"));
         }
     }
 

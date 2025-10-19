@@ -23,7 +23,6 @@ public class OrderConverterService {
      */
     public OrderResponse convertToOrderResponse(Order order, List<OrderItemDto> items) {
         OrderResponse response = new OrderResponse();
-        response.setId(order.getId());
         response.setUuid(order.getUuid());
         response.setOrderNumber(order.getOrderNumber());
         response.setUserId(order.getUserId());

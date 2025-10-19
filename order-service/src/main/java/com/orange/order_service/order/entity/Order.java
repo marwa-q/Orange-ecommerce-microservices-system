@@ -44,7 +44,7 @@ public class Order extends BaseEntity {
     private String shippingAddress;
 
     @Column(name = "gift_message", columnDefinition = "TEXT")
-    private String giftMessage;
+    private String giftMessage = "Thank you for your order! We appreciate your trust in us.";
 
     @Column(name = "delivered_at")
     private LocalDateTime deliveredAt;
@@ -60,8 +60,8 @@ public class Order extends BaseEntity {
         }
     }
 
-    public void markAsConfirmed() {
-        this.status = OrderStatus.CONFIRMED;
+    public void markAsSubmitted() {
+        this.status = OrderStatus.SUBMITTED;
     }
 
     public void markAsUnderReview() {

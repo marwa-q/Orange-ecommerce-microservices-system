@@ -34,9 +34,9 @@ public class OrderAdminService {
     }
 
     /**
-     * Get all confirmed orders with items (ADMIN only) - Paginated
+     * Get all submitted orders with items (ADMIN only) - Paginated
      */
-    public ApiResponse<PaginatedOrderResponse> getConfirmedOrders(HttpServletRequest request, int page, int size) {
+    public ApiResponse<PaginatedOrderResponse> getSubmittedOrders(HttpServletRequest request, int page, int size) {
         try {
             // Validate pagination parameters
             if (page < 0) page = 0;
@@ -46,18 +46,18 @@ public class OrderAdminService {
             // Create pageable object
             Pageable pageable = PageRequest.of(page, size);
 
-            log.info("Fetching confirmed orders with items for admin (page: {}, size: {})", page, size);
+            log.info("Fetching submitted orders with items for admin (page: {}, size: {})", page, size);
 
-            // Get paginated confirmed orders
-            Page<Order> confirmedOrdersPage = orderRepository.findByStatusOrderByCreatedAtDesc(OrderStatus.CONFIRMED, pageable);
+            // Get paginated submitted orders
+            Page<Order> submittedOrdersPage = orderRepository.findByStatusOrderByCreatedAtDesc(OrderStatus.SUBMITTED, pageable);
 
-            if (confirmedOrdersPage.isEmpty()) {
-                log.info("No confirmed orders found");
+            if (submittedOrdersPage.isEmpty()) {
+                log.info("No submitted orders found");
                 return ApiResponse.success(paginationUtilService.createEmptyPaginatedResponse(page, size));
             }
 
             // Convert orders to response DTOs with items
-            List<OrderWithItemsResponse> orderResponses = confirmedOrdersPage.getContent().stream()
+            List<OrderWithItemsResponse> orderResponses = submittedOrdersPage.getContent().stream()
                     .map(order -> {
                         try {
                             // Fetch cart items for each order
@@ -71,14 +71,14 @@ public class OrderAdminService {
                     .collect(Collectors.toList());
 
             // Create paginated response
-            PaginatedOrderResponse paginatedResponse = paginationUtilService.createPaginatedResponse(confirmedOrdersPage, orderResponses);
+            PaginatedOrderResponse paginatedResponse = paginationUtilService.createPaginatedResponse(submittedOrdersPage, orderResponses);
 
-            log.info("Found {} confirmed orders (page {}/{})", orderResponses.size(), page + 1, confirmedOrdersPage.getTotalPages());
+            log.info("Found {} submitted orders (page {}/{})", orderResponses.size(), page + 1, submittedOrdersPage.getTotalPages());
             return ApiResponse.success(paginatedResponse);
 
         } catch (Exception e) {
-            log.error("Error fetching confirmed orders: {}", e.getMessage(), e);
-            return ApiResponse.failure("order.fetch_confirmed_failed");
+            log.error("Error fetching submitted orders: {}", e.getMessage(), e);
+            return ApiResponse.failure("order.fetch_submitted_failed");
         }
     }
 

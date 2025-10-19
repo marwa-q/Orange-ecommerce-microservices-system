@@ -25,9 +25,9 @@ public class AdminController {
      * POST /api/admin/send-welcome
      * Body: { "to":"user@example.com", "fullName":"Marwa", "verificationLink":"https://..." }
      */
-    @PostMapping("/send-welcome")
-    public ResponseEntity<Void> sendWelcome(@RequestBody @Valid SendWelcomeRequest req) {
-        welcomeEmailService.sendWelcomeEmail(req.to(), req.fullName(), req.verificationLink());
-        return ResponseEntity.ok().build();
-    }
+//    @PostMapping("/send-welcome")
+//    public ResponseEntity<Void> sendWelcome(@RequestBody @Valid SendWelcomeRequest req) {
+//        welcomeEmailService.sendWelcomeEmail(req.to(), req.fullName(), req.verificationLink(), req.ge);
+//        return ResponseEntity.ok().build();
+//    }
 }

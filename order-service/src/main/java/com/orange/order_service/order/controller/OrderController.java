@@ -1,7 +1,7 @@
 package com.orange.order_service.order.controller;
 
 import com.orange.order_service.common.dto.ApiResponse;
-import com.orange.order_service.order.dto.ConfirmOrderRequest;
+import com.orange.order_service.order.dto.SubmitOrderRequest;
 import com.orange.order_service.order.dto.CreateOrderRequest;
 import com.orange.order_service.order.dto.OrderResponse;
 import com.orange.order_service.order.dto.OrderWithItemsResponse;
@@ -85,18 +85,18 @@ public class OrderController {
         }
     }
 
-    @PostMapping("/{id}/confirm")
-    @Operation(summary = "Confirm Order", description = "Confirm an order by user - update payment method and address")
-    public ResponseEntity<ApiResponse<OrderResponse>> confirmOrder(
+    @PostMapping("/{id}/submit")
+    @Operation(summary = "Submit Order", description = "Submit an order by user - update payment method and address")
+    public ResponseEntity<ApiResponse<OrderResponse>> submitOrder(
             @PathVariable("id") UUID orderId,
-            @Valid @RequestBody ConfirmOrderRequest request,
+            @Valid @RequestBody SubmitOrderRequest request,
             HttpServletRequest httpRequest) {
 
         try {
             UUID userId = getCurrentUserId(httpRequest);
-            log.info("Received confirm order request for order {} by user {}", orderId, userId);
+            log.info("Received submit order request for order {} by user {}", orderId, userId);
 
-            ApiResponse<OrderResponse> response = orderService.confirmOrder(orderId, userId, request);
+            ApiResponse<OrderResponse> response = orderService.submitOrder(orderId, userId, request);
 
             if (response.isSuccess()) {
                 return ResponseEntity.ok(response);
@@ -104,9 +104,9 @@ public class OrderController {
                 return ResponseEntity.badRequest().body(response);
             }
         } catch (Exception e) {
-            log.error("Error confirming order {}: {}", orderId, e.getMessage());
+            log.error("Error submitting order {}: {}", orderId, e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.failure("order.confirm_error"));
+                    .body(ApiResponse.failure("order.submit_error"));
         }
     }
 

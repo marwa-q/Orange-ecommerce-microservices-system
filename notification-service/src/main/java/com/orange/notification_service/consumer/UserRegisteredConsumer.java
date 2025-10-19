@@ -17,9 +17,9 @@ public class UserRegisteredConsumer {
 
     @RabbitListener(queues = RabbitConfig.USER_REGISTERED_QUEUE)
     public void handleUserRegistered(UserRegisteredEvent event) {
-        System.out.println("Received UserRegisteredEvent for email: " + event.getEmail());
+        System.out.println("Received UserRegisteredEvent for email: " + event.getEmail() + ", userId: " + event.getUserId());
 
         // Send welcome message
-        emailService.sendWelcomeEmail(event.getEmail(), event.getFirstName(), event.getOtp());
+        emailService.sendWelcomeEmail(event.getEmail(), event.getFirstName(), event.getOtp(), event.getUserId());
     }
 }

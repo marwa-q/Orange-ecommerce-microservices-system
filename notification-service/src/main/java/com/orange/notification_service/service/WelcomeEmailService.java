@@ -1,12 +1,15 @@
 package com.orange.notification_service.service;
 
+import com.orange.notification_service.entity.Notification;
 import com.orange.notification_service.mail.EmailSender;
 import com.orange.notification_service.mail.MailTemplateRenderer;
+import com.orange.notification_service.repository.NotificationRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class WelcomeEmailService {
@@ -15,10 +18,12 @@ public class WelcomeEmailService {
 
     private final EmailSender emailSender;
     private final MailTemplateRenderer renderer;
+    private final NotificationRepository notificationRepository;
 
-    public WelcomeEmailService(EmailSender emailSender, MailTemplateRenderer renderer) {
+    public WelcomeEmailService(EmailSender emailSender, MailTemplateRenderer renderer, NotificationRepository notificationRepository) {
         this.emailSender = emailSender;
         this.renderer = renderer;
+        this.notificationRepository = notificationRepository;
     }
 
     /**
@@ -29,7 +34,7 @@ public class WelcomeEmailService {
      * - Subject is set here (can be localized later)
      * - This method is synchronous; we can make it async later with @Async or by sending to a message bus
      */
-    public void sendWelcomeEmail(String toEmail, String fullName, String otp) {
+    public void sendWelcomeEmail(String toEmail, String fullName, String otp, UUID userId) {
         Map<String, Object> model = Map.of(
                 "fullName", fullName != null ? fullName : "",
                 "otp", otp != null ? otp : "#"
@@ -40,7 +45,20 @@ public class WelcomeEmailService {
 
         try {
             emailSender.sendHtml(toEmail, subject, html);
-            log.info("Welcome email sent to {}", toEmail + otp);
+
+            // Save notification record
+            try {
+                Notification notification = new Notification();
+                notification.setUserId(userId);
+                notification.setMessage(html);
+                notificationRepository.save(notification);
+                log.info("Welcome notification record saved for user {}", userId);
+            } catch (Exception e) {
+                log.error("Failed to save welcome notification record for user {}: {}", userId, e.getMessage());
+                // Don't throw exception to avoid breaking email sending
+            }
+
+            log.info("Welcome email sent to {}", toEmail);
         } catch (Exception ex) {
             // handle failures according to your policy later (retry, dead-letter, audit DB)
             log.error("Failed to send welcome email to {}: {}", toEmail, ex.getMessage(), ex);

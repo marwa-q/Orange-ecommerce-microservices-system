@@ -12,7 +12,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class ConfirmOrderRequest {
+public class SubmitOrderRequest {
 
     @NotNull(message = "Payment method is required")
     private PaymentMethod paymentMethod;

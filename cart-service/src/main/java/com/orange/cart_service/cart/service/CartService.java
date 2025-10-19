@@ -261,7 +261,9 @@ public class CartService {
     }
 
     private CartItemDto convertToDto(CartItem cartItem) {
+
         CartItemDto dto = new CartItemDto();
+
         dto.setUuid(cartItem.getUuid());
         dto.setProductId(cartItem.getProductId());
         dto.setQuantity(cartItem.getQuantity());
@@ -269,6 +271,13 @@ public class CartService {
         dto.setSubtotal(cartItem.getSubtotal());
         dto.setCreatedAt(cartItem.getCreatedAt());
         dto.setUpdatedAt(cartItem.getUpdatedAt());
+
+        ApiResponse<String> response = productClient.getProductNameById(cartItem.getProductId());
+        if(response.isSuccess()){
+            dto.setProductName(response.getData());
+        } else{
+            dto.setProductName("Unknown product");
+        }
         return dto;
     }
 

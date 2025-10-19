@@ -1,6 +1,7 @@
 package com.orange.order_service.order.service;
 
 import com.orange.order_service.common.dto.ApiResponse;
+import com.orange.order_service.order.client.ProductClient;
 import com.orange.order_service.order.dto.*;
 import com.orange.order_service.order.entity.Order;
 import com.orange.order_service.order.entity.OrderStatus;
@@ -28,12 +29,16 @@ public class OrderService {
     private final OrderItemService orderItemService;
     private final OrderConverterService orderConverterService;
     private final PaginationUtilService paginationUtilService;
+    private final ProductClient productClient;
+    private final OrderEventPublisherService orderEventPublisherService;
 
-    public OrderService(OrderRepository orderRepository, OrderItemService orderItemService, OrderConverterService orderConverterService, PaginationUtilService paginationUtilService) {
+    public OrderService(OrderRepository orderRepository, OrderItemService orderItemService, OrderConverterService orderConverterService, PaginationUtilService paginationUtilService, ProductClient productClient, OrderEventPublisherService orderEventPublisherService) {
         this.orderRepository = orderRepository;
         this.orderItemService = orderItemService;
         this.orderConverterService = orderConverterService;
         this.paginationUtilService = paginationUtilService;
+        this.productClient = productClient;
+        this.orderEventPublisherService = orderEventPublisherService;
     }
 
     /**
@@ -63,7 +68,6 @@ public class OrderService {
 
             // Save order
             Order savedOrder = orderRepository.save(order);
-            
 
             // Convert to response DTO (items will be empty since we don't store them)
             OrderResponse response = orderConverterService.convertToOrderResponse(savedOrder, List.of());
@@ -144,8 +148,20 @@ public class OrderService {
                 return ApiResponse.failure("order.already_cancelled");
             }
 
+            // Check if we need to increase stock before changing status
+            // Only increase stock if the order is not PENDING (meaning stock was already decreased)
+            OrderStatus previousStatus = order.getStatus();
+            boolean shouldIncreaseStock = previousStatus != OrderStatus.PENDING;
+
             // Update order status to cancelled
             order.setStatus(OrderStatus.CANCELLED);
+
+            // Increase stock quantity only if needed
+            if (shouldIncreaseStock) {
+                log.info("Increasing stock for cancelled order {} (previous status was: {})", orderId, previousStatus);
+                increaseStock(order.getUuid());
+            }
+
             Order cancelledOrder = orderRepository.save(order);
 
             log.info("Order {} successfully cancelled for user {}", orderId, userId);
@@ -161,12 +177,12 @@ public class OrderService {
     }
 
     /**
-     * Confirm an order (USER) - update payment method, address and mark as CONFIRMED
+     * Submit an order (USER) - update payment method, address and mark as SUBMITTED
      */
     @Transactional
-    public ApiResponse<OrderResponse> confirmOrder(UUID orderId, UUID userId, ConfirmOrderRequest request) {
+    public ApiResponse<OrderResponse> submitOrder(UUID orderId, UUID userId, SubmitOrderRequest request) {
         try {
-            log.info("Attempting to confirm order {}", orderId);
+            log.info("Attempting to submit order {}", orderId);
 
             // Find the order by UUID
             Optional<Order> orderOpt = orderRepository.findByUuidAndUserId(orderId, userId);
@@ -177,30 +193,176 @@ public class OrderService {
 
             Order order = orderOpt.get();
 
-            // Check if order can be confirmed (must be PENDING)
+            // Check if order can be submitted (must be PENDING)
             if (order.getStatus() != OrderStatus.PENDING) {
-                log.warn("Cannot confirm order {} - current status is {}", orderId, order.getStatus());
-                return ApiResponse.failure("order.cannot_confirm_status");
+                log.warn("Cannot submit order {} - current status is {}", orderId, order.getStatus());
+                return ApiResponse.failure("order.cannot_submit_status");
+            }
+
+            // Validate stock availability before submitting order
+            ApiResponse<Void> stockValidation = validateStockAvailability(orderId);
+            if (!stockValidation.isSuccess()) {
+                log.warn("Stock validation failed for order {}: {}", orderId, stockValidation.getMessage());
+                return ApiResponse.failure(stockValidation.getMessage());
             }
 
             // Update order data
             order.setPaymentMethod(request.getPaymentMethod());
             order.setShippingAddress(request.getAddress());
             
-            // Mark as confirmed using helper method
-            order.markAsConfirmed();
-            
-            Order confirmedOrder = orderRepository.save(order);
+            // Reduce stock for all products in the cart
+            decreaseStock(order.getUuid());
 
-            log.info("Order {} successfully confirmed", orderId);
+            // Mark as submitted using helper method
+            order.markAsSubmitted();
+            
+            Order submittedOrder = orderRepository.save(order);
+
+            log.info("Order {} successfully submitted", orderId);
+
+            // Publish OrderPlacedEvent for email notification
+            orderEventPublisherService.publishOrderPlacedEvent(submittedOrder);
 
             // Convert to response DTO
-            OrderResponse response = orderConverterService.convertToOrderResponse(confirmedOrder, List.of());
+            OrderResponse response = orderConverterService.convertToOrderResponse(submittedOrder, List.of());
             return ApiResponse.success(response);
 
         } catch (Exception e) {
-            log.error("Error confirming order {}: {}", orderId, e.getMessage(), e);
-            return ApiResponse.failure("order.confirm_failed");
+            log.error("Error submitting order {}: {}", orderId, e.getMessage(), e);
+            return ApiResponse.failure("order.submit_failed");
         }
+    }
+
+    // Change stock for products in an order
+    @Transactional
+    public void changeStock(UUID orderId, String action) {
+        try {
+            // Find the order to get cartId
+            Optional<Order> orderOpt = orderRepository.findByUuid(orderId);
+            if (orderOpt.isEmpty()) {
+                log.error("Order not found with ID: {}", orderId);
+                return;
+            }
+            
+            Order order = orderOpt.get();
+            UUID cartId = order.getCartId();
+            UUID userId = order.getUserId();
+            
+            log.info("Changing stock for order {} with action: {}", orderId, action);
+            
+            // Fetch cart items for the order
+            List<OrderItemDto> cartItems = orderItemService.fetchCartItemsForOrder(cartId, userId);
+            
+            for (OrderItemDto item : cartItems) {
+                try {
+                    ApiResponse<Void> stockResponse = productClient.setStock(
+                            item.getProductId(), 
+                            item.getQuantity(), 
+                            action
+                    );
+                    
+                    if (!stockResponse.isSuccess()) {
+                        log.warn("Failed to {} stock for product {}: {}", 
+                                action, item.getProductId(), stockResponse.getMessage());
+                    } else {
+                        log.info("Successfully {} stock for product {} by {}", 
+                                action, item.getProductId(), item.getQuantity());
+                    }
+                } catch (Exception e) {
+                    log.error("Error {} stock for product {}: {}", 
+                            action, item.getProductId(), e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error changing stock for order {}: {}", orderId, e.getMessage());
+        }
+    }
+    
+    /**
+     * Validate stock availability for all products in an order
+     * This method performs a dry-run stock check without actually modifying inventory
+     * @param orderId The order ID to validate
+     * @return ApiResponse indicating success or failure with specific error message
+     */
+    private ApiResponse<Void> validateStockAvailability(UUID orderId) {
+        try {
+            log.info("Validating stock availability for order: {}", orderId);
+            
+            // Find the order to get cartId and userId
+            Optional<Order> orderOpt = orderRepository.findByUuid(orderId);
+            if (orderOpt.isEmpty()) {
+                log.error("Order not found for stock validation: {}", orderId);
+                return ApiResponse.failure("order.not_found");
+            }
+            
+            Order order = orderOpt.get();
+            UUID cartId = order.getCartId();
+            UUID userId = order.getUserId();
+            
+            // Fetch cart items for the order
+            List<OrderItemDto> cartItems = orderItemService.fetchCartItemsForOrder(cartId, userId);
+            
+            if (cartItems.isEmpty()) {
+                log.warn("No items found in cart for order: {}", orderId);
+                return ApiResponse.failure("order.no_items");
+            }
+            
+            // Validate stock for each item using a temporary decrease/increase cycle
+            for (OrderItemDto item : cartItems) {
+                try {
+                    // Perform temporary stock decrease to validate availability
+                    ApiResponse<Void> decreaseResponse = productClient.setStock(
+                            item.getProductId(), 
+                            item.getQuantity(), 
+                            "decrease"
+                    );
+                    
+                    if (!decreaseResponse.isSuccess()) {
+                        log.warn("Insufficient stock for product {} (requested: {}) in order {}", 
+                                item.getProductId(), item.getQuantity(), orderId);
+                        return ApiResponse.failure("order.insufficient_stock");
+                    }
+                    
+                    // Immediately restore stock to original state
+                    ApiResponse<Void> restoreResponse = productClient.setStock(
+                            item.getProductId(), 
+                            item.getQuantity(), 
+                            "increase"
+                    );
+                    
+                    if (!restoreResponse.isSuccess()) {
+                        log.error("Failed to restore stock for product {} after validation - this may cause inventory inconsistency", 
+                                item.getProductId());
+                        // Don't fail the validation, but log the issue
+                    }
+                    
+                    log.debug("Stock validation passed for product {} (quantity: {})", 
+                            item.getProductId(), item.getQuantity());
+                    
+                } catch (Exception e) {
+                    log.error("Error validating stock for product {} in order {}: {}", 
+                            item.getProductId(), orderId, e.getMessage());
+                    return ApiResponse.failure("order.stock_validation_error");
+                }
+            }
+            
+            log.info("Stock validation successful for order: {} (validated {} items)", 
+                    orderId, cartItems.size());
+            return ApiResponse.success(null);
+            
+        } catch (Exception e) {
+            log.error("Error validating stock for order {}: {}", orderId, e.getMessage());
+            return ApiResponse.failure("order.stock_validation_failed");
+        }
+    }
+    
+    // Convenience method to decrease stock (for order creation)
+    public void decreaseStock(UUID orderId) {
+        changeStock(orderId, "decrease");
+    }
+    
+    // Convenience method to increase stock (for order cancellation)
+    public void increaseStock(UUID orderId) {
+        changeStock(orderId, "increase");
     }
 }

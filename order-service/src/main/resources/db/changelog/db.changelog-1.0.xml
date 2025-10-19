@@ -41,7 +41,7 @@
                 <constraints nullable="false"/>
             </column>
         </createTable>
-        <sql>ALTER TABLE orders ADD CONSTRAINT chk_order_status CHECK (status IN ('PENDING','CONFIRMED','UNDER_REVIEW','SHIPPED','DELIVERED','CANCELLED'))</sql>
+        <sql>ALTER TABLE orders ADD CONSTRAINT chk_order_status CHECK (status IN ('PENDING','SUBMITTED','UNDER_REVIEW','SHIPPED','DELIVERED','CANCELLED'))</sql>
         <sql>ALTER TABLE orders ADD CONSTRAINT chk_order_total_amount CHECK (total_amount >= 0)</sql>
     </changeSet>
 

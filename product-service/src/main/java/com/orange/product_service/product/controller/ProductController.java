@@ -260,6 +260,27 @@ public class ProductController {
         }
     }
 
+    @PostMapping("/{id}/stock")
+    @Operation(summary = "Set product stock", description = "Increase or decrease product stock quantity")
+    public ResponseEntity<ApiResponse<ProductDto>> setStock(
+            @PathVariable UUID id,
+            @RequestParam int quantity,
+            @RequestParam String action, // "increase" or "decrease"
+            @RequestHeader(value = "Accept-Language", defaultValue = "en") String language) {
+        
+        Locale locale = Locale.forLanguageTag(language);
+        ApiResponse<ProductDto> response = productService.setStock(id, quantity, action, locale);
+        
+        if (response.isSuccess()) {
+            return ResponseEntity.ok(response);
+        } else {
+            return ResponseEntity.badRequest().body(response);
+        }
+    }
 
-
+    @GetMapping("/{id}/name")
+    public ResponseEntity<ApiResponse<String>> getProductNameByUuid(@PathVariable UUID id) {
+        ApiResponse<String> response = productService.getProductNameById(id);
+        return ResponseEntity.ok(response);
+    }
 }

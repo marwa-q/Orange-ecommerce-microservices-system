@@ -32,10 +32,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.support.RequestContext;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -503,6 +503,71 @@ public class ProductService {
         } catch (Exception e) {
             return new java.util.ArrayList<>();
         }
+    }
+    
+    // Set stock for a product
+    @CacheEvict(value = {"products", "productsByCategory", "productDetails"}, allEntries = true)
+    public ApiResponse<ProductDto> setStock(UUID productId, int quantity, String action, Locale locale) {
+        try {
+            // Find the product
+            Product product = productRepository.findByUuid(productId)
+                    .orElseThrow(() -> new RuntimeException("Product not found with ID: " + productId));
+            
+            // Check if product is not deleted
+            if (product.getIsDeleted()) {
+                String msg = messageSource.getMessage("product.not.found", null, locale);
+                return ApiResponse.failure(msg);
+            }
+            
+            // Validate operation type
+            if (!"increase".equalsIgnoreCase(action) && !"decrease".equalsIgnoreCase(action)) {
+                String msg = messageSource.getMessage("product.stock.invalid.operation", null, locale);
+                return ApiResponse.failure(msg);
+            }
+            
+            // Validate quantity
+            if (quantity <= 0) {
+                String msg = messageSource.getMessage("product.stock.invalid.quantity", null, locale);
+                return ApiResponse.failure(msg);
+            }
+            
+            // Get current stock
+            int currentStock = product.getStock() != null ? product.getStock() : 0;
+            int effectiveQuantityChange = "increase".equalsIgnoreCase(action) ? quantity : -quantity;
+            int newStock = currentStock + effectiveQuantityChange;
+            
+            // Check if decreasing stock would result in negative stock
+            if (newStock < 0) {
+                String msg = messageSource.getMessage("product.stock.insufficient", null, locale);
+                return ApiResponse.failure(msg);
+            }
+            
+            // Update stock
+            product.setStock(newStock);
+            Product savedProduct = productRepository.save(product);
+            
+            // Check for low stock after updating
+            checkAndPublishLowStockEvent(savedProduct);
+            
+            ProductDto productDto = convertToDto(savedProduct);
+            
+            String msg = messageSource.getMessage("product.stock.updated.success", null, locale);
+            return ApiResponse.success(msg, productDto);
+        } catch (Exception e) {
+            String msg = messageSource.getMessage("product.stock.updated.failure", null, locale);
+            return ApiResponse.failure(msg + ": " + e.getMessage());
+        }
+    }
+
+    public ApiResponse<String> getProductNameById(UUID id) {
+
+        Optional<String> productName = productRepository.findNameByUuid(id);
+
+        if(productName.isEmpty()){
+            return new ApiResponse<String>(false, "Failed", null);
+        }
+        String name = productName.get();
+        return new ApiResponse<String>(true, "Success", name);
     }
 
     // Convert entity to dto

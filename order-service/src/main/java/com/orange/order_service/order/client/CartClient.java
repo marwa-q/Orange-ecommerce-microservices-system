@@ -17,9 +17,6 @@ import java.util.List;
 )
 public interface CartClient {
 
-    @GetMapping("/api/cart/items")
-    ApiResponse<List<CartItemResponseDto>> getCartItems(@RequestHeader("Authorization") String authorization);
-
     @GetMapping("/api/cart/{cartId}/items")
     ApiResponse<List<CartItemResponseDto>> getCartItemsByCartId(
             @PathVariable("cartId") String cartId

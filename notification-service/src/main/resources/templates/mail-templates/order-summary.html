@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Confirmation - <span th:text="${orderNumber}">ORD-2024-001</span></title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #ff6600;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #ff6600;
+            margin-bottom: 10px;
+        }
+        .order-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin: 20px 0;
+        }
+        .order-info {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .info-label {
+            font-weight: bold;
+            color: #666;
+        }
+        .info-value {
+            color: #333;
+        }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: #fff;
+        }
+        .items-table th,
+        .items-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .items-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #333;
+        }
+        .items-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        .product-image {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 5px;
+        }
+        .total-section {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+            text-align: right;
+        }
+        .total-amount {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff6600;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 14px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #ff6600;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 5px;
+        }
+        .btn:hover {
+            background-color: #e55a00;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-submitted {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .gift-message {
+            background: linear-gradient(135deg, #ff6600, #ff8533);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(255, 102, 0, 0.3);
+        }
+        .gift-message h3 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .gift-message p {
+            margin: 0;
+            font-size: 16px;
+            font-style: italic;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo" th:text="${companyName}">Orange E-commerce</div>
+            <h1>Order Confirmation</h1>
+            <div class="order-number" th:text="'Order #' + ${orderNumber}">Order #ORD-2024-001</div>
+        </div>
+
+        <!-- Gift Message -->
+        <div th:if="${giftMessage != null and giftMessage != ''}" class="gift-message">
+            <p th:text="${giftMessage}">Happy Birthday! Hope you love this gift!</p>
+        </div>
+
+        <!-- Order Status -->
+        <div style="text-align: center; margin: 20px 0;">
+            <span class="status-badge status-submitted" th:text="${status}">SUBMITTED</span>
+        </div>
+
+        <!-- Order Information -->
+        <div class="order-info">
+            <h3 style="margin-top: 0; color: #333;">Order Details</h3>
+            <div class="info-row">
+                <span class="info-label">Order Number:</span>
+                <span class="info-value" th:text="${orderNumber}">ORD-2024-001</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Order Date:</span>
+                <span class="info-value" th:text="${orderDate}">15/01/2024 10:30</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Payment Method:</span>
+                <span class="info-value" th:text="${paymentMethod}">Cache on Delivery</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Shipping Address:</span>
+                <span class="info-value" th:text="${shippingAddress}">123 Main Street, City, Country</span>
+            </div>
+        </div>
+
+        <!-- Order Items -->
+        <h3>Order Items (<span th:text="${itemsCount}">2</span> items)</h3>
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="item : ${orderItems}">
+                    <td>
+                        <div style="display: flex; align-items: center;">
+                            <img th:if="${item.productImage != null and item.productImage != ''}" 
+                                 th:src="${item.productImage}" 
+                                 th:alt="${item.productName}"
+                                 class="product-image">
+                            <div style="margin-left: 10px;">
+                                <div style="font-weight: bold;" th:text="${item.productName}">Product Name</div>
+                                <div style="font-size: 12px; color: #666;" th:text="'ID: ' + ${item.productId}">ID: 12345</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td th:text="${item.quantity}">2</td>
+                    <td th:text="${#numbers.formatDecimal(item.price, 1, 2)}">$25.00</td>
+                    <td th:text="${#numbers.formatDecimal(item.subtotal, 1, 2)}">$50.00</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Total Amount -->
+        <div class="total-section">
+            <div style="font-size: 18px; margin-bottom: 10px;">
+                <strong>Total Amount: <span class="total-amount" th:text="${totalAmount}">$150.00</span></strong>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="#" class="btn">Track Your Order</a>
+            <a href="#" class="btn">View Order Details</a>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Thank you for your order! We'll send you another email when your order ships.</p>
+            <p>If you have any questions, please contact us at <a th:href="'mailto:' + ${supportEmail}" th:text="${supportEmail}">support@orange-ecommerce.com</a></p>
+            <p>Visit our website: <a th:href="${websiteUrl}" th:text="${websiteUrl}">https://orange-ecommerce.com</a></p>
+            <p style="margin-top: 20px; font-size: 12px; color: #999;">
+                This is an automated email. Please do not reply to this message.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

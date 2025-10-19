@@ -78,6 +78,7 @@ public class OrderItemService {
     public OrderItemDto convertCartItemToOrderItem(CartItemResponseDto cartItem) {
         OrderItemDto orderItem = new OrderItemDto();
         orderItem.setProductId(cartItem.getProductId());
+        orderItem.setProductName(cartItem.getProductName());
         orderItem.setQuantity(cartItem.getQuantity());
         orderItem.setPrice(cartItem.getPrice());
         orderItem.setSubtotal(cartItem.getSubtotal());

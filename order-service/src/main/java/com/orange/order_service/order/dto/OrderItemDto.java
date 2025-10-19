@@ -18,6 +18,9 @@ public class OrderItemDto {
     
     @NotNull(message = "Product ID is required")
     private UUID productId;
+
+    @NotNull(message = "Product name is required")
+    private String productName;
     
     @NotNull(message = "Quantity is required")
     @Positive(message = "Quantity must be positive")
