@@ -1,0 +1,255 @@
+server:
+  port: 8086
+
+spring:
+  application:
+    name: gateway-service
+  profiles:
+    active: dev
+
+  # Redis Configuration for Rate Limiting
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+  cloud:
+    gateway:
+      # Global CORS Configuration
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origin-patterns: "*"
+            allowed-methods: "*"
+            allowed-headers: "*"
+            allow-credentials: true
+            max-age: 3600
+
+      # Routes Configuration
+      routes:
+        # User Service Routes
+        - id: user-service
+          uri: http://localhost:8081
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - RewritePath=/api/users/(?<segment>.*), /${segment}
+            - JwtAuthFilter
+            - RoleBasedFilter=USER,ADMIN
+            - RequestRateLimiter=redis=10, replenishRate=10, burstCapacity=20
+            - Retry=3, status=500-599
+            - RequestHeader=X-Service-Name, user-service
+            - AddRequestHeader=X-Language, en
+            - LoggingFilter
+
+        # Product Service Routes
+        - id: product-service
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/products/**
+          filters:
+            - RewritePath=/api/products/(?<segment>.*), /${segment}
+            - JwtAuthFilter
+            - RoleBasedFilter=USER,ADMIN
+            - RequestRateLimiter=redis=20, replenishRate=20, burstCapacity=40
+            - Retry=3, status=500-599
+            - RequestHeader=X-Service-Name, product-service
+            - AddRequestHeader=X-Language, en
+            - LoggingFilter
+
+        # Cart Service Routes
+        - id: cart-service
+          uri: http://localhost:8084
+          predicates:
+            - Path=/api/cart/**
+          filters:
+            - RewritePath=/api/cart/(?<segment>.*), /${segment}
+            - JwtAuthFilter
+            - RoleBasedFilter=USER,ADMIN
+            - RequestRateLimiter=redis=15, replenishRate=15, burstCapacity=30
+            - Retry=3, status=500-599
+            - RequestHeader=X-Service-Name, cart-service
+            - AddRequestHeader=X-Language, en
+            - LoggingFilter
+
+        # Order Service Routes
+        - id: order-service
+          uri: http://localhost:8085
+          predicates:
+            - Path=/api/orders/**
+          filters:
+            - RewritePath=/api/orders/(?<segment>.*), /${segment}
+            - JwtAuthFilter
+            - RoleBasedFilter=USER,ADMIN
+            - RequestRateLimiter=redis=10, replenishRate=10, burstCapacity=20
+            - Retry=3, status=500-599
+            - RequestHeader=X-Service-Name, order-service
+            - AddRequestHeader=X-Language, en
+            - LoggingFilter
+
+        # Admin Order Routes (RBAC)
+        - id: order-admin-service
+          uri: http://localhost:8085
+          predicates:
+            - Path=/api/admin/orders/**
+          filters:
+            - RewritePath=/api/admin/orders/(?<segment>.*), /admin/orders/${segment}
+            - JwtAuthFilter
+            - RoleBasedFilter=ADMIN
+            - RequestRateLimiter=redis=5, replenishRate=5, burstCapacity=10
+            - Retry=3, status=500-599
+            - RequestHeader=X-Service-Name, order-service
+            - AddRequestHeader=X-Language, en
+            - LoggingFilter
+
+        # Notification Service Routes
+        - id: notification-service
+          uri: http://localhost:8082
+          predicates:
+            - Path=/api/notifications/**
+          filters:
+            - RewritePath=/api/notifications/(?<segment>.*), /${segment}
+            - JwtAuthFilter
+            - RoleBasedFilter=ADMIN
+            - RequestRateLimiter=redis=5, replenishRate=5, burstCapacity=10
+            - Retry=3, status=500-599
+            - RequestHeader=X-Service-Name, notification-service
+            - AddRequestHeader=X-Language, en
+            - LoggingFilter
+
+        # Swagger UI Proxy Routes
+        - id: user-service-swagger
+          uri: http://localhost:8081
+          predicates:
+            - Path=/swagger/user/**
+          filters:
+            - RewritePath=/swagger/user/(?<segment>.*), /swagger-ui/index.html
+            - JwtAuthFilter
+            - RoleBasedFilter=ADMIN
+            - LoggingFilter
+
+        - id: product-service-swagger
+          uri: http://localhost:8083
+          predicates:
+            - Path=/swagger/product/**
+          filters:
+            - RewritePath=/swagger/product/(?<segment>.*), /swagger-ui/index.html
+            - JwtAuthFilter
+            - RoleBasedFilter=ADMIN
+            - LoggingFilter
+
+        - id: cart-service-swagger
+          uri: http://localhost:8084
+          predicates:
+            - Path=/swagger/cart/**
+          filters:
+            - RewritePath=/swagger/cart/(?<segment>.*), /swagger-ui/index.html
+            - JwtAuthFilter
+            - RoleBasedFilter=ADMIN
+            - LoggingFilter
+
+        - id: order-service-swagger
+          uri: http://localhost:8085
+          predicates:
+            - Path=/swagger/order/**
+          filters:
+            - RewritePath=/swagger/order/(?<segment>.*), /swagger-ui/index.html
+            - JwtAuthFilter
+            - RoleBasedFilter=ADMIN
+            - LoggingFilter
+
+        - id: notification-service-swagger
+          uri: http://localhost:8082
+          predicates:
+            - Path=/swagger/notification/**
+          filters:
+            - RewritePath=/swagger/notification/(?<segment>.*), /swagger-ui/index.html
+            - JwtAuthFilter
+            - RoleBasedFilter=ADMIN
+            - LoggingFilter
+
+        # BFF Pattern - Mobile App API
+        - id: mobile-bff
+          uri: http://localhost:8080  # Internal aggregation service (to be implemented)
+          predicates:
+            - Path=/api/mobile/**
+          filters:
+            - RewritePath=/api/mobile/(?<segment>.*), /bff/${segment}
+            - JwtAuthFilter
+            - RoleBasedFilter=USER
+            - RequestRateLimiter=redis=50, replenishRate=50, burstCapacity=100
+            - Retry=2, status=500-599
+            - AddRequestHeader=X-Client-Type, mobile
+            - AddRequestHeader=X-Language, en
+            - LoggingFilter
+
+        # API Key Routes (Optional)
+        - id: api-key-route
+          uri: http://localhost:8081  # Example: user service for API key access
+          predicates:
+            - Path=/api/public/**
+          filters:
+            - RewritePath=/api/public/(?<segment>.*), /public/${segment}
+            - ApiKeyFilter
+            - RequestRateLimiter=redis=100, replenishRate=100, burstCapacity=200
+            - LoggingFilter
+
+      # Default Filters
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+        - LoggingFilter
+
+      # HTTP Client Configuration
+      httpclient:
+        connect-timeout: 2000
+        response-timeout: 5000
+
+# JWT Configuration
+jwt:
+  secret: mySecretKey12345678901234567890123456789012345678901234567890
+  expiration: 86400000  # 24 hours
+
+# Rate Limiting Configuration
+redis-rate-limiter:
+  replenishRate: 10
+  burstCapacity: 20
+  requestedTokens: 1
+
+# Logging Configuration
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web: DEBUG
+    reactor.netty: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/gateway.log
+
+# Management Endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Actuator Configuration
+info:
+  app:
+    name: Gateway Service
+    description: API Gateway for Orange E-commerce Microservices
+    version: 1.0.0
