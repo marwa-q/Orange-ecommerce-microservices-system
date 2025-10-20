@@ -1,0 +1,199 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20250821-01
+      author: marwa
+      changes:
+        - sql:
+            sql: |
+              CREATE TABLE IF NOT EXISTS users (
+                id INT not null auto_increment primary key,
+                uuid BINARY(16) NOT NULL,
+                email VARCHAR(50) NOT NULL UNIQUE,
+                password VARCHAR(255) NOT NULL,
+                first_name VARCHAR(20),
+                last_name VARCHAR(20),
+                role VARCHAR(20) NOT NULL DEFAULT 'USER',
+                status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+                phone VARCHAR(14),
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NOT NULL,
+                UNIQUE KEY ux_users_email (email)
+              );
+
+  - changeSet:
+      id: add-avatar-column-to-users
+      author: marwa
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: avatar
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: true
+
+  - changeSet:
+      id: 2025-09-07-create-login-activity
+      author: marwa
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        not:
+          tableExists:
+            tableName: login_activity
+      changes:
+        - createTable:
+            tableName: login_activity
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT AUTO_INCREMENT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: event_uuid
+                  type: BINARY(16)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: BINARY(16)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: username
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: occurred_at
+                  type: TIMESTAMP(6)
+                  defaultValueComputed: CURRENT_TIMESTAMP(6)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: duration_ms
+                  type: INT
+                  constraints:
+                    nullable: true
+              - column:
+                  name: ip_address
+                  type: VARCHAR(45)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: user_agent
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: session_id
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: trace_id
+                  type: VARCHAR(64)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: outcome
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: failure_reason
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: true
+        - createIndex:
+            tableName: login_activity
+            indexName: idx_login_activity_user_time
+            columns:
+              - column:
+                  name: user_id
+              - column:
+                  name: occurred_at
+        - createIndex:
+            tableName: login_activity
+            indexName: idx_login_activity_ip_time
+            columns:
+              - column:
+                  name: ip_address
+              - column:
+                  name: occurred_at
+        - createIndex:
+            tableName: login_activity
+            indexName: idx_login_activity_trace
+            columns:
+              - column:
+                  name: trace_id
+
+  - changeSet:
+      id: 20250914-01-add-email-verified-to-users
+      author: marwa
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: email_verified
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 20250914-02-create-verify-email-table
+      author: marwa
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        not:
+          tableExists:
+            tableName: verify_email
+      changes:
+        - createTable:
+            tableName: verify_email
+            columns:
+              - column:
+                  name: id
+                  type: INT AUTO_INCREMENT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: otp_hash
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: expires_at
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: used
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+        - addForeignKeyConstraint:
+            baseTableName: verify_email
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_verify_email_user
+        - addUniqueConstraint:
+            tableName: verify_email
+            columnNames: user_id
+            constraintName: uq_verify_email_user
