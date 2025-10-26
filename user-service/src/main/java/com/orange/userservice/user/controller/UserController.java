@@ -22,7 +22,7 @@ import java.util.Locale;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/users")
 @SecurityRequirement(name = "bearerAuth")
 public class UserController {
 

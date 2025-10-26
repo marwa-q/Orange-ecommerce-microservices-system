@@ -76,6 +76,9 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
+                .httpBasic(httpBasic -> httpBasic.disable())
+                .formLogin(form -> form.disable())
+                .logout(logout -> logout.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(
                         org.springframework.security.config.http.SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
@@ -85,6 +88,7 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/assets/**",
+                                "/api/users/**",
                                 "/api/auth/**",
                                 "/api/verify/**",
                                 "/api/varify/**",
