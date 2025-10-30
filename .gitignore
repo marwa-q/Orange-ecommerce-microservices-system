@@ -1,0 +1,11 @@
+# IDE folders
+.idea/
+.cursor/
+
+# Logs
+logs/
+*.log
+
+# System files
+.DS_Store
+Thumbs.db

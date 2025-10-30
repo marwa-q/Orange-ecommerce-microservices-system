@@ -3,6 +3,7 @@ package com.orange.gateway_service.filters;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.orange.gateway_service.dto.ApiResponse;
+import com.orange.gateway_service.config.GatewayAppProperties;
 import com.orange.gateway_service.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,65 +27,21 @@ import java.util.Map;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class RoleBasedAccessFilter implements GlobalFilter, Ordered {
 
     private final JwtUtil jwtUtil;
     private final ObjectMapper objectMapper;
+    private final GatewayAppProperties gatewayProperties;
 
-    // Define role-based access control rules
-    private static final Map<String, List<String>> ROLE_BASED_PATHS = new HashMap<>();
-
-    static {
-        // Admin-only paths
-        ROLE_BASED_PATHS.put("ADMIN", Arrays.asList(
-            "/api/admin",
-            "/api/users/admin",
-            "/api/orders/admin",
-            "/api/products/admin",
-            "/api/cart/admin",
-            "/api/notifications/admin"
-        ));
-
-        // User paths (authenticated users)
-        ROLE_BASED_PATHS.put("USER", Arrays.asList(
-            "/api/users/me",
-            "/api/users/update",
-            "/api/orders",
-            "/api/cart",
-            "/api/products/review"
-        ));
-
-        // Public paths (no authentication required)
-        ROLE_BASED_PATHS.put("PUBLIC", Arrays.asList(
-            "/api/users/auth/login",
-            "/api/users/auth/register",
-            "/api/products/list",
-            "/api/categories",
-            "/api/reviews",
-            "/api/tags",
-            "/api/health",
-            "/api/test",
-            "/api/auth-test",
-            "/swagger",
-            "/v3/api-docs",
-            "/actuator",
-            "/webjars",
-            "/favicon.ico"
-        ));
+    public RoleBasedAccessFilter(JwtUtil jwtUtil, ObjectMapper objectMapper, GatewayAppProperties gatewayProperties) {
+        this.jwtUtil = jwtUtil;
+        this.objectMapper = objectMapper;
+        this.gatewayProperties = gatewayProperties;
     }
 
-    // Define public paths that don't require authentication
-    private static final List<String> PUBLIC_PATHS = Arrays.asList(
-        "/swagger-ui", "/swagger-ui.html", "/v3/api-docs", "/swagger",
-        "/swagger-user", "/swagger-product", "/swagger-cart", "/swagger-order", "/swagger-notification",
-        "/actuator/health", "/actuator/info",
-        "/api/users/auth/login", "/api/users/auth/register",
-        "/api/varify/email", "/api/varify/request-otp",
-        "/api/products/list", "/api/categories", "/api/reviews", "/api/tags",
-        "/api/health", "/api/test", "/api/auth-test",
-        "/api/cart/actuator", "/api/orders/actuator"
-    );
+    // Role-based paths now come from configuration via GatewayAppProperties
+
+    // Public paths are read from configuration (gateway.public-paths)
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -135,8 +92,11 @@ public class RoleBasedAccessFilter implements GlobalFilter, Ordered {
         }
     }
 
+    
+
     private boolean isPublicPath(String path) {
-        return PUBLIC_PATHS.stream().anyMatch(publicPath ->
+        List<String> publicPaths = gatewayProperties.getPublicPaths();
+        return publicPaths != null && publicPaths.stream().anyMatch(publicPath ->
             path.startsWith(publicPath) ||
             path.equals("/") ||
             path.matches("/swagger.*")
@@ -149,16 +109,23 @@ public class RoleBasedAccessFilter implements GlobalFilter, Ordered {
             return true;
         }
 
+        // If path is admin-only, block non-admin roles
+        Map<String, List<String>> roleBasedPaths = gatewayProperties.getRoleBasedPaths();
+        List<String> adminPaths = roleBasedPaths != null ? roleBasedPaths.get("ADMIN") : null;
+        if (adminPaths != null && adminPaths.stream().anyMatch(path::startsWith)) {
+            return false;
+        }
+
         // Check if path is in user's allowed paths
-        List<String> allowedPaths = ROLE_BASED_PATHS.get(userRole.toUpperCase());
+        List<String> allowedPaths = roleBasedPaths != null ? roleBasedPaths.get(userRole.toUpperCase()) : null;
         if (allowedPaths != null) {
             return allowedPaths.stream().anyMatch(allowedPath -> path.startsWith(allowedPath));
         }
 
         // Check if path is public
-        List<String> publicPaths = ROLE_BASED_PATHS.get("PUBLIC");
-        if (publicPaths != null) {
-            return publicPaths.stream().anyMatch(publicPath -> path.startsWith(publicPath));
+        List<String> publicPathsFromRoleMap = roleBasedPaths != null ? roleBasedPaths.get("PUBLIC") : null;
+        if (publicPathsFromRoleMap != null) {
+            return publicPathsFromRoleMap.stream().anyMatch(publicPath -> path.startsWith(publicPath));
         }
 
         // Deny access by default
@@ -183,16 +150,23 @@ public class RoleBasedAccessFilter implements GlobalFilter, Ordered {
     }
 
     private Mono<Void> writeApiResponse(ServerHttpResponse response, String messageKey, HttpStatus status) {
-        try {
-            ApiResponse<Void> apiResponse = ApiResponse.error(messageKey, null); // No exchange available here
-            String jsonResponse = objectMapper.writeValueAsString(apiResponse);
-            byte[] bytes = jsonResponse.getBytes(StandardCharsets.UTF_8);
-            return response.writeWith(Mono.just(response.bufferFactory().wrap(bytes)));
-        } catch (JsonProcessingException e) {
-            String fallbackResponse = "{\"success\":false,\"message\":\"Access denied\",\"data\":null}";
-            byte[] bytes = fallbackResponse.getBytes(StandardCharsets.UTF_8);
-            return response.writeWith(Mono.just(response.bufferFactory().wrap(bytes)));
-        }
+        return ApiResponse.failure(messageKey)
+            .flatMap(apiResponse -> {
+                try {
+                    String jsonResponse = objectMapper.writeValueAsString(apiResponse);
+                    byte[] bytes = jsonResponse.getBytes(StandardCharsets.UTF_8);
+                    return response.writeWith(Mono.just(response.bufferFactory().wrap(bytes)));
+                } catch (JsonProcessingException e) {
+                    String fallbackResponse = "{\"success\":false,\"message\":\"" + messageKey + "\",\"data\":null}";
+                    byte[] bytes = fallbackResponse.getBytes(StandardCharsets.UTF_8);
+                    return response.writeWith(Mono.just(response.bufferFactory().wrap(bytes)));
+                }
+            })
+            .onErrorResume(e -> {
+                String fallbackResponse = "{\"success\":false,\"message\":\"" + messageKey + "\",\"data\":null}";
+                byte[] bytes = fallbackResponse.getBytes(StandardCharsets.UTF_8);
+                return response.writeWith(Mono.just(response.bufferFactory().wrap(bytes)));
+            });
     }
 
     @Override

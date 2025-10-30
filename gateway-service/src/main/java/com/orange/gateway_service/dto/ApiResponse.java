@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.context.MessageSource;
-import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
 
 import java.util.Locale;
 
@@ -15,6 +15,7 @@ import java.util.Locale;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ApiResponse<T> {
+
     private boolean success;
     private String message;
     private T data;
@@ -25,45 +26,45 @@ public class ApiResponse<T> {
         messageSource = source;
     }
 
-    public static <T> ApiResponse<T> success(String ky, T data, ServerWebExchange exchange) {
-        String resolved = resolveMessage(ky, exchange);
-        return new ApiResponse<T>(true, resolved, data);
+    public static <T> Mono<ApiResponse<T>> success(String key, T data) {
+        return resolveMessage(key)
+                .map(resolved -> new ApiResponse<>(true, resolved, data));
     }
 
-    public static <T> ApiResponse<T> success(String ky, ServerWebExchange exchange) {
-        String resolved = resolveMessage(ky, exchange);
-        return new ApiResponse<T>(true, resolved, null);
+    public static <T> Mono<ApiResponse<T>> success(String key) {
+        return resolveMessage(key)
+                .map(resolved -> new ApiResponse<>(true, resolved, null));
     }
 
-    public static <T> ApiResponse<T> success(T data, ServerWebExchange exchange) {
-        String resolved = resolveMessage("success", exchange);
-        return new ApiResponse<T>(true, resolved, data);
+    public static <T> Mono<ApiResponse<T>> success(T data) {
+        return resolveMessage("success")
+                .map(resolved -> new ApiResponse<>(true, resolved, data));
     }
 
-    public static <T> ApiResponse<T> error(String ky, ServerWebExchange exchange) {
-        String resolved = resolveMessage(ky, exchange);
-        return new ApiResponse<T>(false, resolved, null);
+    public static <T> Mono<ApiResponse<T>> error(String key) {
+        return resolveMessage(key)
+                .map(resolved -> new ApiResponse<>(false, resolved, null));
     }
 
-    public static <T> ApiResponse<T> failure(String ky, ServerWebExchange exchange) {
-        String resolved = resolveMessage(ky, exchange);
-        return new ApiResponse<T>(false, resolved, null);
+    public static <T> Mono<ApiResponse<T>> failure(String key) {
+        return resolveMessage(key)
+                .map(resolved -> new ApiResponse<>(false, resolved, null));
     }
 
-    public boolean isSuccess() {
-        return success;
-    }
-
-    private static String resolveMessage(String key, ServerWebExchange exchange) {
-        String lang = RequestUtils.getHeaderValue(exchange, "Accept-Language", "en");
-        Locale locale = Locale.forLanguageTag(lang);
-        if (messageSource == null) {
-            return key;
-        }
-        try {
-            return messageSource.getMessage(key, null, key, locale);
-        } catch (Exception ignored) {
-            return key;
-        }
+    private static Mono<String> resolveMessage(String key) {
+        return RequestUtils.getHeaderValue("Accept-Language", "en")
+                .map(Locale::forLanguageTag)
+                .flatMap(locale -> {
+                    if (messageSource == null) {
+                        System.out.println("Message source is null");
+                        return Mono.just(key);
+                    }
+                    try {
+                        String resolved = messageSource.getMessage(key, null, key, locale);
+                        return Mono.just(resolved);
+                    } catch (Exception ex) {
+                        return Mono.just(ex.getMessage());
+                    }
+                });
     }
 }

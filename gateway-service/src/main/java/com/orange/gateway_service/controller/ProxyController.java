@@ -43,7 +43,8 @@ public class ProxyController {
             "CORS Support"
         });
 
-        ApiResponse<Map<String, Object>> apiResponse = ApiResponse.success(status, exchange);
+        ApiResponse<Map<String, Object>> apiResponse = new ApiResponse<>(true, "Gateway proxy is active", status);
+
         return Mono.just(ResponseEntity.ok(apiResponse));
     }
 }

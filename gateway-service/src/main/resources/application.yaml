@@ -6,6 +6,17 @@ spring:
     name: gateway-service
   profiles:
     active: dev
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
   cloud:
     compatibility-verifier:
       enabled: false
@@ -18,30 +29,86 @@ spring:
             allowed-headers: "*"
             allow-credentials: true
             max-age: 3600
+      # HTTP Client Timeout Configuration (applied globally)
+      httpclient:
+        connect-timeout: 3000 # 3 seconds connection timeout
+        response-timeout: 3000 # 3 seconds response timeout (lowered for timeout testing)
       routes:
         # User Service API
         - id: user-service
           uri: http://localhost:8081
           predicates:
             - Path=/api/users/**
+          filters:
+            - name: Retry
+              args:
+                retries: 3
+                statuses: BAD_GATEWAY,GATEWAY_TIMEOUT,SERVICE_UNAVAILABLE
+                methods: GET,POST,PUT,DELETE
+                backoff:
+                  firstBackoff: 50ms
+                  maxBackoff: 500ms
+                  factor: 2
+                  basedOnPreviousValue: false
+          metadata:
+            response-timeout: 5000 # 5 seconds per route timeout
 
         # Product Service API
         - id: product-service
           uri: http://localhost:8083
           predicates:
             - Path=/api/products/**, /api/categories/**, /api/reviews/**, /api/tags/**, /api/auth-test/**, /api/health/**, /api/test/**
+          filters:
+            - name: Retry
+              args:
+                retries: 3
+                statuses: BAD_GATEWAY,GATEWAY_TIMEOUT,SERVICE_UNAVAILABLE
+                methods: GET,POST,PUT,DELETE
+                backoff:
+                  firstBackoff: 50ms
+                  maxBackoff: 500ms
+                  factor: 2
+                  basedOnPreviousValue: false
+          metadata:
+            response-timeout: 5000
 
         # Cart service API
         - id: cart-service
           uri: http://localhost:8084
           predicates:
             - Path=/api/cart/**, /api/actuator
+          filters:
+            - name: Retry
+              args:
+                retries: 3
+                statuses: BAD_GATEWAY,GATEWAY_TIMEOUT,SERVICE_UNAVAILABLE
+                methods: GET,POST,PUT,DELETE
+                backoff:
+                  firstBackoff: 50ms
+                  maxBackoff: 500ms
+                  factor: 2
+                  basedOnPreviousValue: false
+          metadata:
+            response-timeout: 5000
 
         # Order service API
         - id: order-service
           uri: http://localhost:8085
           predicates:
             - Path=/api/orders/**, /api/actuator
+          filters:
+            - name: Retry
+              args:
+                retries: 3
+                statuses: BAD_GATEWAY,GATEWAY_TIMEOUT,SERVICE_UNAVAILABLE
+                methods: GET,POST,PUT,DELETE
+                backoff:
+                  firstBackoff: 50ms
+                  maxBackoff: 500ms
+                  factor: 2
+                  basedOnPreviousValue: false
+          metadata:
+            response-timeout: 5000
 
         # Gateway Swagger UI (main entry point)
         - id: gateway-swagger-ui
@@ -49,7 +116,18 @@ spring:
           predicates:
             - Path=/swagger-ui/**, /swagger-ui.html
           filters:
-            - RewritePath=/swagger-ui/(?<segment>.*), /swagger-ui/${segment}
+            - name: Retry
+              args:
+                retries: 2
+                statuses: BAD_GATEWAY,GATEWAY_TIMEOUT,SERVICE_UNAVAILABLE
+                methods: GET
+                backoff:
+                  firstBackoff: 50ms
+                  maxBackoff: 300ms
+                  factor: 2
+                  basedOnPreviousValue: false
+          metadata:
+            response-timeout: 3000 # Shorter timeout for internal gateway route
 
         # Swagger UI Proxies
         - id: swagger-user-service
@@ -57,70 +135,180 @@ spring:
           predicates:
             - Path=/swagger-user/**
           filters:
-            - RewritePath=/swagger-user/(?<segment>.*), /swagger-ui/${segment}
+            - name: Retry
+              args:
+                retries: 3
+                statuses: BAD_GATEWAY,GATEWAY_TIMEOUT,SERVICE_UNAVAILABLE
+                methods: GET
+                backoff:
+                  firstBackoff: 50ms
+                  maxBackoff: 500ms
+                  factor: 2
+                  basedOnPreviousValue: false
+          metadata:
+            response-timeout: 5000
 
         - id: swagger-user-api-docs
           uri: http://localhost:8081
           predicates:
             - Path=/swagger-user/v3/api-docs
           filters:
-            - RewritePath=/swagger-user/v3/api-docs, /v3/api-docs
+            - name: Retry
+              args:
+                retries: 3
+                statuses: BAD_GATEWAY,GATEWAY_TIMEOUT,SERVICE_UNAVAILABLE
+                methods: GET
+                backoff:
+                  firstBackoff: 50ms
+                  maxBackoff: 500ms
+                  factor: 2
+                  basedOnPreviousValue: false
+          metadata:
+            response-timeout: 5000
 
         - id: swagger-notification-service
           uri: http://localhost:8082
           predicates:
             - Path=/swagger/notification/**
           filters:
-            - RewritePath=/swagger/notification/(?<segment>.*), /${segment}
+            - name: Retry
+              args:
+                retries: 3
+                statuses: BAD_GATEWAY,GATEWAY_TIMEOUT,SERVICE_UNAVAILABLE
+                methods: GET
+                backoff:
+                  firstBackoff: 50ms
+                  maxBackoff: 500ms
+                  factor: 2
+                  basedOnPreviousValue: false
+          metadata:
+            response-timeout: 5000
 
         - id: swagger-notification-api-docs
           uri: http://localhost:8082
           predicates:
             - Path=/swagger/notification/v3/api-docs
           filters:
-            - RewritePath=/swagger/notification/v3/api-docs, /v3/api-docs
+            - name: Retry
+              args:
+                retries: 3
+                statuses: BAD_GATEWAY,GATEWAY_TIMEOUT,SERVICE_UNAVAILABLE
+                methods: GET
+                backoff:
+                  firstBackoff: 50ms
+                  maxBackoff: 500ms
+                  factor: 2
+                  basedOnPreviousValue: false
+          metadata:
+            response-timeout: 5000
 
         - id: swagger-product-service
           uri: http://localhost:8083
           predicates:
             - Path=/swagger/product/**
           filters:
-            - RewritePath=/swagger/product/(?<segment>.*), /${segment}
+            - name: Retry
+              args:
+                retries: 3
+                statuses: BAD_GATEWAY,GATEWAY_TIMEOUT,SERVICE_UNAVAILABLE
+                methods: GET
+                backoff:
+                  firstBackoff: 50ms
+                  maxBackoff: 500ms
+                  factor: 2
+                  basedOnPreviousValue: false
+          metadata:
+            response-timeout: 5000
 
         - id: swagger-product-api-docs
           uri: http://localhost:8083
           predicates:
             - Path=/swagger/product/v3/api-docs
           filters:
-            - RewritePath=/swagger/product/v3/api-docs, /v3/api-docs
+            - name: Retry
+              args:
+                retries: 3
+                statuses: BAD_GATEWAY,GATEWAY_TIMEOUT,SERVICE_UNAVAILABLE
+                methods: GET
+                backoff:
+                  firstBackoff: 50ms
+                  maxBackoff: 500ms
+                  factor: 2
+                  basedOnPreviousValue: false
+          metadata:
+            response-timeout: 5000
 
         - id: swagger-cart-service
           uri: http://localhost:8084
           predicates:
             - Path=/swagger/cart/**
           filters:
-            - RewritePath=/swagger/cart/(?<segment>.*), /${segment}
+            - name: Retry
+              args:
+                retries: 3
+                statuses: BAD_GATEWAY,GATEWAY_TIMEOUT,SERVICE_UNAVAILABLE
+                methods: GET
+                backoff:
+                  firstBackoff: 50ms
+                  maxBackoff: 500ms
+                  factor: 2
+                  basedOnPreviousValue: false
+          metadata:
+            response-timeout: 5000
 
         - id: swagger-cart-api-docs
           uri: http://localhost:8084
           predicates:
             - Path=/swagger/cart/v3/api-docs
           filters:
-            - RewritePath=/swagger/cart/v3/api-docs, /v3/api-docs
+            - name: Retry
+              args:
+                retries: 3
+                statuses: BAD_GATEWAY,GATEWAY_TIMEOUT,SERVICE_UNAVAILABLE
+                methods: GET
+                backoff:
+                  firstBackoff: 50ms
+                  maxBackoff: 500ms
+                  factor: 2
+                  basedOnPreviousValue: false
+          metadata:
+            response-timeout: 5000
 
         - id: swagger-order-service
           uri: http://localhost:8085
           predicates:
             - Path=/swagger/order/**
           filters:
-            - RewritePath=/swagger/order/(?<segment>.*), /${segment}
+            - name: Retry
+              args:
+                retries: 3
+                statuses: BAD_GATEWAY,GATEWAY_TIMEOUT,SERVICE_UNAVAILABLE
+                methods: GET
+                backoff:
+                  firstBackoff: 50ms
+                  maxBackoff: 500ms
+                  factor: 2
+                  basedOnPreviousValue: false
+          metadata:
+            response-timeout: 5000
 
         - id: swagger-order-api-docs
           uri: http://localhost:8085
           predicates:
             - Path=/swagger/order/v3/api-docs
           filters:
-            - RewritePath=/swagger/order/v3/api-docs, /v3/api-docs
+            - name: Retry
+              args:
+                retries: 3
+                statuses: BAD_GATEWAY,GATEWAY_TIMEOUT,SERVICE_UNAVAILABLE
+                methods: GET
+                backoff:
+                  firstBackoff: 50ms
+                  maxBackoff: 500ms
+                  factor: 2
+                  basedOnPreviousValue: false
+          metadata:
+            response-timeout: 5000
 
 # Management Endpoints
 management:
@@ -159,3 +347,76 @@ info:
 jwt:
   secret: ${JWT_SECRET:uP9hT8bQZ3rWn2xJv5sM0aE1dL6kC9yRj7fG4uH2tN8pB5cS0xA1zM3wQ6rV9dJ2}
   expMinutes: 43200
+
+# Gateway configuration
+gateway:
+  public-paths:
+    - /swagger-ui
+    - /swagger-ui.html
+    - /v3/api-docs
+    - /swagger
+    - /swagger-user
+    - /swagger-product
+    - /swagger-cart
+    - /swagger-order
+    - /swagger-notification
+    - /actuator/health
+    - /actuator/info
+    - /api/users/auth/login
+    - /api/users/auth/register
+    - /api/varify/email
+    - /api/varify/request-otp
+    - /api/products/list
+    - /api/categories
+    - /api/reviews
+    - /api/tags
+    - /api/health
+    - /api/test
+    - /api/auth-test
+    - /api/cart/actuator
+    - /api/orders/actuator
+  rate-limiting:
+    requests-per-minute: 10
+    requests-per-hour: 1000
+    excluded-paths:
+      - /actuator/health
+      - /swagger-ui
+      - /v3/api-docs
+      - /swagger
+      - /health
+      - /api/health
+  locale:
+    default-language: en
+  role-based-paths:
+    ADMIN:
+      - /api/admin
+      - /api/users/admin
+      - /api/orders/admin
+      - /api/products/admin
+      - /api/cart/admin
+      - /api/notifications/admin
+    USER:
+      - /api/users/me
+      - /api/users/update
+      - /api/orders
+      - /api/cart
+      - /api/products/review
+    PUBLIC:
+      - /api/users/auth/login
+      - /api/users/auth/register
+      - /api/products/list
+      - /api/categories
+      - /api/reviews
+      - /api/tags
+      - /api/health
+      - /api/test
+      - /api/auth-test
+      - /swagger
+      - /v3/api-docs
+      - /actuator
+      - /webjars
+      - /favicon.ico
+
+logging:
+  level:
+    org.springframework.cloud.gateway.filter.factory.RetryGatewayFilterFactory: DEBUG

@@ -3,9 +3,12 @@ package com.orange.gateway_service.filters;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.orange.gateway_service.dto.ApiResponse;
+import com.orange.gateway_service.config.GatewayAppProperties;
+import lombok.RequiredArgsConstructor;
 import com.orange.gateway_service.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -33,18 +36,8 @@ import java.util.List;
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
     private final JwtUtil jwtUtil;
-
-    // Define public paths that don't require authentication
-    private static final List<String> PUBLIC_PATHS = Arrays.asList(
-        "/swagger-ui", "/swagger-ui.html", "/v3/api-docs", "/swagger",
-        "/swagger-user", "/swagger-product", "/swagger-cart", "/swagger-order", "/swagger-notification",
-        "/actuator/health", "/actuator/info",
-        "/api/users/auth/login", "/api/users/auth/register",
-        "/api/varify/email", "/api/varify/request-otp",
-        "/api/products/list", "/api/categories", "/api/reviews", "/api/tags",
-        "/api/health", "/api/test", "/api/auth-test",
-        "/api/cart/actuator", "/api/orders/actuator"  // Allow actuator endpoints
-    );
+    private final ObjectMapper objectMapper;
+    private final GatewayAppProperties gatewayProperties;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -109,7 +102,8 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     private boolean isPublicPath(String path) {
-        return PUBLIC_PATHS.stream().anyMatch(publicPath ->
+        List<String> publicPaths = gatewayProperties.getPublicPaths();
+        return publicPaths != null && publicPaths.stream().anyMatch(publicPath ->
             path.startsWith(publicPath) ||
             path.equals("/") ||
             path.matches("/swagger.*")
@@ -122,11 +116,9 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         response.getHeaders().add(HttpHeaders.WWW_AUTHENTICATE, "Bearer");
         response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
-        // Create ApiResponse for unauthorized
-        ApiResponse<Void> apiResponse = ApiResponse.error("auth.unauthorized", exchange);
+        ApiResponse<Void> apiResponse = new ApiResponse<>(false, "auth.unauthorized", null);
 
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
             String jsonResponse = objectMapper.writeValueAsString(apiResponse);
             byte[] bytes = jsonResponse.getBytes(StandardCharsets.UTF_8);
             return response.writeWith(Mono.just(response.bufferFactory().wrap(bytes)));

@@ -33,7 +33,7 @@ public class FallbackController {
         response.put("message", "User service is currently unavailable. Please try again later.");
         response.put("fallback", true);
 
-        ApiResponse<Map<String, Object>> apiResponse = ApiResponse.failure("service.unavailable", exchange);
+        ApiResponse<Map<String, Object>> apiResponse = new ApiResponse<>(false, "Service is currently unavailable. Please try again later.", response);
         return Mono.just(ResponseEntity
                 .status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(apiResponse));
