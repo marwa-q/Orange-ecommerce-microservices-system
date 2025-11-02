@@ -62,11 +62,4 @@ public class BffClient {
                 response != null ? response.keySet() : "null"))
             .doOnError(error -> log.error("Error calling product service: {}", error.getMessage(), error));
     }
-
-    public Mono<Map> reviewsSummary(String productIdsCsv) {
-        return webClient.get()
-            .uri(props.getProductBaseUrl() + "/api/reviews/summary?productIds=" + productIdsCsv)
-            .retrieve()
-            .bodyToMono(Map.class);
-    }
 }
