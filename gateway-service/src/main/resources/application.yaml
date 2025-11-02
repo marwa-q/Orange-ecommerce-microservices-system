@@ -40,6 +40,9 @@ spring:
           predicates:
             - Path=/api/users/**
           filters:
+            - name: CircuitBreaker
+              args:
+                name: userServiceCircuitBreaker
             - name: Retry
               args:
                 retries: 3
@@ -59,6 +62,9 @@ spring:
           predicates:
             - Path=/api/products/**, /api/categories/**, /api/reviews/**, /api/tags/**, /api/auth-test/**, /api/health/**, /api/test/**
           filters:
+            - name: CircuitBreaker
+              args:
+                name: productServiceCircuitBreaker
             - name: Retry
               args:
                 retries: 3
@@ -78,6 +84,9 @@ spring:
           predicates:
             - Path=/api/cart/**, /api/actuator
           filters:
+            - name: CircuitBreaker
+              args:
+                name: cartServiceCircuitBreaker
             - name: Retry
               args:
                 retries: 3
@@ -97,6 +106,9 @@ spring:
           predicates:
             - Path=/api/orders/**, /api/actuator
           filters:
+            - name: CircuitBreaker
+              args:
+                name: orderServiceCircuitBreaker
             - name: Retry
               args:
                 retries: 3
@@ -127,7 +139,7 @@ spring:
                   factor: 2
                   basedOnPreviousValue: false
           metadata:
-            response-timeout: 3000 # Shorter timeout for internal gateway route
+            response-timeout: 100000
 
         # Swagger UI Proxies
         - id: swagger-user-service
@@ -290,7 +302,7 @@ spring:
                   factor: 2
                   basedOnPreviousValue: false
           metadata:
-            response-timeout: 5000
+            response-timeout: 10000
 
         - id: swagger-order-api-docs
           uri: http://localhost:8085
@@ -315,10 +327,17 @@ management:
   endpoints:
     web:
       exposure:
-        include: health
+        include: health,circuitbreakers,circuitbreakerevents
   endpoint:
     health:
       show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  circuitbreaker:
+    metrics:
+      enabled: true
 
 # Swagger/OpenAPI Configuration
 springdoc:
@@ -375,6 +394,8 @@ gateway:
     - /api/auth-test
     - /api/cart/actuator
     - /api/orders/actuator
+    - /bff/auth/login
+    - /bff/products
   rate-limiting:
     requests-per-minute: 10
     requests-per-hour: 1000
@@ -420,3 +441,63 @@ gateway:
 logging:
   level:
     org.springframework.cloud.gateway.filter.factory.RetryGatewayFilterFactory: DEBUG
+    io.github.resilience4j.circuitbreaker: INFO
+    org.springframework.cloud.circuitbreaker: DEBUG
+
+# Resilience4j Circuit Breaker Configuration
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 60s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+        recordExceptions:
+          - org.springframework.web.reactive.function.client.WebClientException
+          - java.util.concurrent.TimeoutException
+          - java.net.ConnectException
+      userServiceCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 60s
+        failureRateThreshold: 50
+      productServiceCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 60s
+        failureRateThreshold: 50
+      cartServiceCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 60s
+        failureRateThreshold: 50
+      orderServiceCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 60s
+        failureRateThreshold: 50
+
+# BFF service base URLs (override per environment)
+bff:
+  services:
+    userBaseUrl: http://localhost:8081
+    productBaseUrl: http://localhost:8083
+    cartBaseUrl: http://localhost:8084
+    orderBaseUrl: http://localhost:8085
