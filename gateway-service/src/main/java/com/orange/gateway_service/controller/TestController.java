@@ -11,7 +11,7 @@ public class TestController {
     public ResponseEntity<String> testDelay() {
         try {
             // Simulate a slow response (5 seconds) - will timeout if gateway timeout < 5s
-            Thread.sleep(10000);
+            Thread.sleep(13000);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
