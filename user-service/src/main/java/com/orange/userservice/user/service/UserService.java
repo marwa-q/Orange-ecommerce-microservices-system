@@ -1,7 +1,7 @@
 package com.orange.userservice.user.service;
 
 import com.orange.userservice.security.JwtUtil;
-import com.orange.userservice.user.dto.ApiResponse;
+import com.orange.userservice.common.dto.ApiResponse;
 import com.orange.userservice.user.dto.MeResponse;
 import com.orange.userservice.user.dto.ResetPasswordRequest;
 import com.orange.userservice.user.dto.UpdateProfileRequest;
@@ -43,9 +43,9 @@ public class UserService {
     @Value("${app.media.avatar-dir}")
     private String avatarDir; // storage/avatars
 
-    public MeResponse getMe(UUID userId) {
+    public ApiResponse<MeResponse> getMe(UUID userId) {
         User u = userRepo.findByUuid(userId).orElseThrow();
-        return new MeResponse(
+        MeResponse response = new MeResponse(
                 u.getUuid(),
                 u.getEmail(),
                 u.getFirstName(),
@@ -57,6 +57,7 @@ public class UserService {
                 u.getCreatedAt(),
                 u.getUpdatedAt()
         );
+        return ApiResponse.success(response);
     }
 
     @Transactional
@@ -76,7 +77,7 @@ public class UserService {
             );
             String ct = avatar.getContentType();
             if (ct == null || !extByType.containsKey(ct)) {
-                return ApiResponse.failure("Only JPEG/PNG/WEBP images are allowed");
+                return ApiResponse.failure("avatar.image.format.invalid");
             }
 
             String newName = userId + "-" + UUID.randomUUID() + extByType.get(ct);
@@ -87,7 +88,7 @@ public class UserService {
                 Files.createDirectories(avatarRoot);
                 Files.copy(avatar.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
-                return ApiResponse.failure("Failed to store avatar file.");
+                return ApiResponse.failure("avatar.store.failed");
             }
 
             // delete previous avatar if it’s one we own
@@ -100,7 +101,7 @@ public class UserService {
 
         u.setUpdatedAt(Instant.now());
         userRepo.save(u);
-        MeResponse response = getMe(userId);
+        MeResponse response = getMe(userId).getData();
         return ApiResponse.success(response);
     }
 

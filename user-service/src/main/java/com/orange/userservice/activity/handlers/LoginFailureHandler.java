@@ -1,17 +1,22 @@
 package com.orange.userservice.activity.handlers;
 
 import com.orange.userservice.activity.port.LoginActivityRecorder;
-import com.orange.userservice.activity.domain.LoginOutcome;
+import com.orange.userservice.activity.util.LoginActivityRecordBuilder;
 import com.orange.userservice.activity.web.RequestMetadataHolder;
-import java.util.Optional;
-import java.util.UUID;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
-import java.io.IOException;
+import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.util.UUID;
+
+/**
+ * Handler for failed authentication events.
+ * Records login activity when a user authentication attempt fails.
+ */
+@Component
 public class LoginFailureHandler implements AuthenticationFailureHandler {
 
     private final LoginActivityRecorder recorder;
@@ -23,23 +28,22 @@ public class LoginFailureHandler implements AuthenticationFailureHandler {
     @Override
     public void onAuthenticationFailure(HttpServletRequest request,
                                         HttpServletResponse response,
-                                        AuthenticationException exception) throws IOException, ServletException {
-        var md = RequestMetadataHolder.get();
+                                        AuthenticationException exception) throws IOException {
+        var metadata = RequestMetadataHolder.get();
         String username = request.getParameter("username");
-        String ip = request.getRemoteAddr();
-        String ua = request.getHeader("User-Agent");
-        recorder.recordLoginEvent(new LoginActivityRecorder.Record(
+        long currentTime = System.nanoTime();
+        String failureReason = exception != null ? exception.getClass().getSimpleName() : "Unknown";
+
+        var record = LoginActivityRecordBuilder.buildFailureRecord(
                 UUID.randomUUID(),
-                Optional.empty(),
+                currentTime, // Note: Ideally this should be request start time
+                currentTime,
                 username,
-                System.nanoTime(),
-                System.nanoTime(),
-                md != null && md.ip() != null ? md.ip() : ip,
-                md != null ? md.userAgent() : ua,
-                md != null ? md.sessionId() : null,
-                md != null ? md.traceId() : null,
-                LoginOutcome.FAILURE,
-                exception.getClass().getSimpleName()
-        ));
+                request,
+                metadata,
+                failureReason
+        );
+
+        recorder.recordLoginEvent(record);
     }
 }

@@ -1,6 +1,6 @@
 package com.orange.userservice.advice;
 
-import com.orange.userservice.user.dto.ApiResponse;
+import com.orange.userservice.common.dto.ApiResponse;
 import com.orange.userservice.common.service.MessageService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;

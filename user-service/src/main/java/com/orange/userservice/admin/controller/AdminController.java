@@ -2,6 +2,7 @@ package com.orange.userservice.admin.controller;
 
 import com.orange.userservice.admin.dto.ChangeStatusRequest;
 import com.orange.userservice.admin.service.AdminService;
+import com.orange.userservice.common.dto.ApiResponse;
 import com.orange.userservice.user.entity.User;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -22,18 +23,19 @@ public class AdminController {
     }
 
     @GetMapping("/users")
-    public Page<User> list(@RequestParam(defaultValue = "0") int page,
+    public ApiResponse<Page<User>> list(@RequestParam(defaultValue = "0") int page,
                            @RequestParam(defaultValue = "20") int size) {
-        return adminService.listUsers(page, size);
+        Page<User> users = adminService.listUsers(page, size);
+        return ApiResponse.success(users);
     }
 
     @PatchMapping("/users/status/{id}")
-    public void changeStatus(@PathVariable UUID id, @Valid @RequestBody ChangeStatusRequest req) {
-        adminService.changeStatus(id, req);
+    public ApiResponse<Void> changeStatus(@PathVariable UUID id, @Valid @RequestBody ChangeStatusRequest req) {
+        return adminService.changeStatus(id, req);
     }
 
     @PatchMapping("/users/promote/{id}")
-    public void promoteToAdmin(@PathVariable UUID id) {
-        adminService.promoteToAdmin(id);
+    public ApiResponse<Void> promoteToAdmin(@PathVariable UUID id) {
+        return adminService.promoteToAdmin(id);
     }
 }

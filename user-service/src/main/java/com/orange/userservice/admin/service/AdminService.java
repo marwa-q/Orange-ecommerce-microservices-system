@@ -1,6 +1,7 @@
 package com.orange.userservice.admin.service;
 
 import com.orange.userservice.admin.dto.ChangeStatusRequest;
+import com.orange.userservice.common.dto.ApiResponse;
 import com.orange.userservice.user.entity.Role;
 import com.orange.userservice.user.entity.User;
 import com.orange.userservice.user.repo.UserRepository;
@@ -22,15 +23,25 @@ public class AdminService {
         return userRepo.findAll(PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
     }
 
-    public void changeStatus(UUID id, ChangeStatusRequest req) {
-        User u = userRepo.findByUuid(id).orElseThrow();
-        u.setStatus(req.status());
-        userRepo.save(u);
+    public ApiResponse<Void> changeStatus(UUID id, ChangeStatusRequest req) {
+        try {
+            User u = userRepo.findByUuid(id).orElseThrow();
+            u.setStatus(req.status());
+            userRepo.save(u);
+            return ApiResponse.success("user.status.updated.success");
+        } catch (Exception e) {
+            return ApiResponse.failure("user.status.update.failed");
+        }
     }
 
-    public void promoteToAdmin(UUID id) {
-        User u = userRepo.findByUuid(id).orElseThrow();
-        u.setRole(Role.ADMIN);
-        userRepo.save(u);
+    public ApiResponse<Void> promoteToAdmin(UUID id) {
+        try {
+            User u = userRepo.findByUuid(id).orElseThrow();
+            u.setRole(Role.ADMIN);
+            userRepo.save(u);
+            return ApiResponse.success("user.promoted.success");
+        } catch (Exception e) {
+            return ApiResponse.failure("user.promotion.failed");
+        }
     }
 }

@@ -2,6 +2,7 @@ package com.orange.userservice.user.controller;
 
 import com.orange.userservice.security.JwtUtil;
 import com.orange.userservice.user.dto.*;
+import com.orange.userservice.common.dto.ApiResponse;
 import com.orange.userservice.user.repo.UserRepository;
 import com.orange.userservice.user.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,14 +12,12 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import org.springframework.context.MessageSource;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Locale;
 import java.util.UUID;
 
 @RestController
@@ -40,7 +39,7 @@ public class UserController {
 
     @GetMapping("/me")
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
-    public MeResponse me(@AuthenticationPrincipal User principal) {
+    public ApiResponse<MeResponse> me(@AuthenticationPrincipal User principal) {
         return service.getMe(resolveUserId(principal.getUsername()));
     }
 
@@ -84,14 +83,12 @@ public class UserController {
 
     @GetMapping("/{userId}/email")
     @Operation(summary = "Get user email by UUID", description = "Retrieve a user's email using their UUID")
-    public ResponseEntity<ApiResponse<String>> getUserEmailById(@PathVariable UUID userId) {
+    public ApiResponse<String> getUserEmailById(@PathVariable UUID userId) {
         try {
             String email = service.getEmailByUserId(userId);
-            ApiResponse<String> response = new ApiResponse<>(true, "User email retrieved successfully", email);
-            return ResponseEntity.ok(response);
+            return ApiResponse.success("user.email.retrieved.success", email);
         } catch (RuntimeException e) {
-            ApiResponse<String> errorResponse = new ApiResponse<>(false, e.getMessage(), null);
-            return ResponseEntity.badRequest().body(errorResponse);
+            return ApiResponse.failure(e.getMessage());
         }
     }
 }

@@ -9,9 +9,9 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.orange</groupId>
-	<artifactId>userservice</artifactId>
+	<artifactId>user-service</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>userservice</name>
+	<name>user-service</name>
 	<description>User service part of Orange E-shop   </description>
 	<url/>
 	<licenses>
